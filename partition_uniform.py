@@ -85,22 +85,24 @@ def _mapCellGidsToPieces(numCellsPerBlockX, numCellsPerBlockY, npX, npY, nx, ny)
         d[blockGid] = [cellGid]
   return d
 
-def _create2d(nx, ny, npX, npY, numDofsPerCell):
-  assert( nx % npX == 0)
-  assert( ny % npY == 0)
+def _create2d_new(totCellsX, totCellsY, xSplits, ySplits, ndpc):
+  blockSizes = {}
+  d = {}
+  blockGid = 0
+  for ygids in ySplits:
+    for xgids in xSplits:
+      for j in ygids:
+        for i in xgids:
+          cellGid  = _gid_from_ij(i,j, totCellsX, totCellsY)
+          if blockGid in d:
+            d[blockGid].append(cellGid)
+          else:
+            d[blockGid] = [cellGid]
+      blockSizes[blockGid] = [len(xgids), len(ygids)]
+      blockGid += 1
 
-  numCellsPerBlockX = int(nx/npX)
-  numCellsPerBlockY = int(ny/npY)
-  print("numCellsPerBlockX = ", numCellsPerBlockX)
-  print("numCellsPerBlockY = ", numCellsPerBlockY)
-  cellGidsDic = _mapCellGidsToPieces(numCellsPerBlockX, \
-                                     numCellsPerBlockY, \
-                                     npX, npY, nx, ny)
-  stateDofsGidsDic = _mapCellGidsToStateDofsGids(cellGidsDic, \
-                                                 nx, ny, \
-                                                 numDofsPerCell)
-
-  return [numCellsPerBlockX, numCellsPerBlockY, cellGidsDic, stateDofsGidsDic]
+  stateDofsGidsDic = _mapCellGidsToStateDofsGids(d, totCellsX, totCellsY, ndpc)
+  return [blockSizes, d, stateDofsGidsDic]
 
 
 #----------------------------
@@ -132,24 +134,27 @@ if __name__ == '__main__':
     os.system('mkdir -p ' + workDir)
 
   meshDim = find_dimensionality_from_info_file(meshPath)
-
   if meshDim == 2:
     nx = find_num_cells_from_info_file(meshPath, "nx")
     ny = find_num_cells_from_info_file(meshPath, "ny")
+
     nTilesX = args.tiles[0]
     nTilesY = args.tiles[1]
     totTiles = nTilesX*nTilesY
 
-    bSzX, bSzY, cellGidsDic, stateDofsGidsDic = _create2d(nx, ny, \
-                                                          nTilesX, nTilesY, \
-                                                          ndpc)
+    xSplits = np.array_split(np.arange(nx), nTilesX)
+    ySplits = np.array_split(np.arange(ny), nTilesY)
+
+    blockSizes, cellGidsDic, stateDofsGidsDic = _create2d_new(nx, ny, \
+                                                              xSplits, ySplits, \
+                                                              ndpc)
 
     np.savetxt(workDir+"/topo.txt", \
                np.array([nTilesX, nTilesY]), fmt='%8d')
 
     for k in range(totTiles):
       np.savetxt(workDir+"/block_size_p_"+str(k)+".txt", \
-                 np.array([bSzX, bSzY]), fmt='%8d')
+                 np.array(blockSizes[k]), fmt='%8d')
 
     for k,v in cellGidsDic.items():
       np.savetxt(workDir+"/cell_gids_wrt_full_mesh_p_"+str(k)+".txt", \

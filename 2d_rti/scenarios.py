@@ -32,53 +32,49 @@ odrom_partitioning_style = {}
 
 base_dic[1] = {
   'general' : {
-    'problem': "2d_swe",
+    'problem': "2d_rti",
     'meshDir': "tbd"
   },
 
   'fom' : {
-    'finalTimeTrain': 5.0,
-    'finalTimeTest' : 7.5,
+    'finalTimeTrain': 1.8,
+    'finalTimeTest' : 1.8,
     'inviscidFluxReconstruction' : "Weno5",
     'odeScheme': "SSPRK3",
-    'dt' : 0.0025,
+    'dt' : 0.0005,
     'stateSamplingFreq' : 4,
-    'velocitySamplingFreq' : 100
+    'velocitySamplingFreq' : 50
   },
 
   'odrom' : {
-    'finalTime': 7.5,
+    'finalTime': 1.8,
     'inviscidFluxReconstruction' : "Weno5",
     'odeScheme': "SSPRK3",
-    'dt' : 0.01,
+    'dt' : 0.002,
     'stateSamplingFreq' : 4
   },
 
   'physicalCoefficients' : {
-    'gravity'   : 9.8,
-    'coriolis'  : "tbd",
-    'pulsemag'  : 0.125
+    'amplitude' : "tbd",
   }
 }
 
 train_points[1] = {
-  0: -3.5,
-  1: -3.0,
-  2: -2.5
+  0: 0.020,
+  1: 0.040
 }
 
 test_points[1]  = {
-  0: -2.11,
-  1: -3.76
+  0: 0.030,
 }
 
 odrom_algos[1]        = ["PodGalerkinFull"]
-odrom_energies[1]     = [99.99, 99.999, 99.999999]
+odrom_energies[1]     = [99.99999]
 odrom_basis_sets[1]   = {
-  0: [0,1,2]
+  0: [0,1]
 }
 
-odrom_partitioning_topol[1] = [[5,5], [10,10]]
+odrom_partitioning_topol[1] = [[2,7]]
 odrom_partitioning_style[1] = ['uniform']
 
 '''
