@@ -60,7 +60,7 @@ test_points[1]  = {
 }
 
 odrom_algos[1]        = ["PodGalerkinFull", "PolyGalerkinFull"]
-odrom_energies[1]     = [99.99, 99.999]#, 99.9999, 99.99999]
+odrom_energies[1]     = [99.99] #, 99.999], 99.9999, 99.99999]
 odrom_basis_sets[1]   = {
   0: [0,1]
 }
@@ -68,9 +68,9 @@ odrom_basis_sets[1]   = {
 # -2: compute orders of the poly bases to match pod modes and truncate to have a full poly order
 # -1: compute orders of the poly bases to match pod modes and truncate exactly to match
 # int>0: we use same poly order in each tile
-odrom_poly_order[1]   = [-1, -2] #, 2, 3, 5, 8]
+odrom_poly_order[1]   = [-1, -2, 1, 2, 3, 5, 6, 8]
 
-odrom_partitioning_topol[1] = [[5,5]]
+odrom_partitioning_topol[1] = [[5,5], [16,16]]
 odrom_partitioning_style[1] = ['uniform']
 
 
