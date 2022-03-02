@@ -1,18 +1,22 @@
 
-from scipy.special import legendre
+# standard modules
 from argparse import ArgumentParser
 import sys, os, importlib, pathlib, math
 import random, subprocess
 import matplotlib.pyplot as plt
 import re, os, time, yaml
 import numpy as np
-from numpy import linalg as LA
+from scipy import linalg as scipyla
+from decimal import Decimal
+
+# pda module
 import pressiodemoapps as pda
-from scipy import linalg
-from odrom_full import *
+
+# local imports
 from myio import *
-from observer import FomObserver
-from entropy_fncs import conservative_to_entropy
+from legendre_bases import LegendreBases2d
+from observer import FomObserver, RomObserver
+from odrom_full import *
 
 #==============================================================
 # functions
@@ -86,125 +90,47 @@ def path_to_pod_data_dir(workDir, partitioningKeyword, setId):
   return workDir + "/partition_based_"+partitioningKeyword+"_full_pod_set_"+str(setId)
 
 # -------------------------------------------------------------------
-def path_to_poly_bases_data_dir(workDir, partitioningKeyword, order, energy=None, setId=None):
-  res = workDir + "/partition_based_"+partitioningKeyword+"_full_poly_order_"+str(order)
+def path_to_poly_bases_data_dir(workDir, partitioningKeyword, \
+                                order, energy=None, setId=None):
+  result = workDir + "/partition_based_"+partitioningKeyword+"_full_poly_order_"+str(order)
   if energy != None:
-    res += "_"+str(energy)
+    result += "_"+str(energy)
   if setId != None:
-    res += "_set_"+str(setId)
-
-  return res
-
-# -------------------------------------------------------------------
-def inviscid_flux_string_to_stencil_size(stringIn):
-  if stringIn == "FirstOrder":
-    return 3
-  elif stringIn == "Weno3":
-    return 5
-  elif stringIn == "Weno5":
-    return 7
-  else:
-    sys.exit("Invalid scheme detected {}".format(scheme))
-    return None
-
-# -------------------------------------------------------------------
-def inviscid_flux_string_to_enum(stringIn):
-  if stringIn == "FirstOrder":
-    return pda.InviscidFluxReconstruction.FirstOrder
-  elif stringIn == "Weno3":
-    return pda.InviscidFluxReconstruction.Weno3
-  elif stringIn == "Weno5":
-    return pda.InviscidFluxReconstruction.Weno5
-  else:
-    sys.exit("Invalid string")
+    result += "_set_"+str(setId)
+  return result
 
 # ----------------------------------------------------------------
 def make_fom_mesh_if_not_existing(workDir, problem, \
                                   module, scenario, \
                                   pdaDir, meshSize):
+  assert( len(meshSize)== module.dimensionality)
 
-  # store dir to meshing scripts in pressio-demoapps
-  pdaMeshDir = pdaDir + "/meshing_scripts"
-  meshArgs = None
+  meshArgs = ("python3", \
+              pdaDir + "/meshing_scripts/create_full_mesh.py")
 
-  if problem in ["2d_swe", "2d_rti"]:
-    # need both x and y
-    assert(len(args.mesh) == 2)
+  outDir = workDir + "/full_mesh" + str(meshSize[0])
+  if len(meshSize) == 1:
+    meshArgs += ( "-n", str(meshSize[0]) )
+  if len(meshSize) == 2:
+    outDir += "x" + str(meshSize[1])
+    meshArgs += ( "-n", str(meshSize[0]), str(meshSize[1]) )
+  if len(meshSize) == 3:
+    outDir += "x" + str(meshSize[1]) + "x" + str(meshSize[2])
+    meshArgs += ( "-n", str(meshSize[0]), str(meshSize[1]), str(meshSize[2]) )
 
-    # find stencil size needed for the FOM
-    schemeString = module.base_dic[scenario]['fom']['inviscidFluxReconstruction']
-    stencilSize  = inviscid_flux_string_to_stencil_size(schemeString)
+  meshArgs += ("--outDir", outDir)
 
-    # bounds depend on problem
-    bounds = None
-    if problem == "2d_swe":
-      bounds = [-5., 5., -5., 5.]
-    else:
-      bounds = [0., 0.25, 0., 1.]
+  # problem-specific function to fill args for FOM mesh generation
+  meshArgs += module.tuple_args_for_fom_mesh_generation(scenario)
 
-    nx, ny = meshSize[0], meshSize[1]
-    outDir = workDir + "/full_mesh" + str(nx) + "x" + str(ny)
-    if os.path.exists(outDir):
-      print('{} already exists'.format(outDir))
-    else:
-      print('Generating mesh {}'.format(outDir))
-      meshArgs = ("python3", \
-                  pdaMeshDir + '/create_full_mesh.py',\
-                  "-n", str(nx), str(ny),\
-                  "--outDir", outDir,\
-                  "--bounds", str(bounds[0]), str(bounds[1]), str(bounds[2]), str(bounds[3]),\
-                  "-s", str(stencilSize))
-      popen  = subprocess.Popen(meshArgs, stdout=subprocess.PIPE);
-      popen.wait()
-      output = popen.stdout.read();
-
-  elif problem  == "2d_gs":
-
-    assert(len(args.mesh) == 2)
-    bounds = [-1.25, 1.25, -1.25, 1.25]
-    nx, ny = meshSize[0], meshSize[1]
-    outDir = workDir + "/full_mesh" + str(nx) + "x" + str(ny)
-    if os.path.exists(outDir):
-      print('{} already exists'.format(outDir))
-    else:
-      print('Generating mesh {}'.format(outDir))
-      meshArgs = ("python3", \
-                  pdaMeshDir + '/create_full_mesh.py',\
-                  "-n", str(nx), str(ny),\
-                  "--outDir", outDir,\
-                  "--bounds", str(bounds[0]), str(bounds[1]), str(bounds[2]), str(bounds[3]),\
-                  "--periodic", "x", "y")
-      popen  = subprocess.Popen(meshArgs, stdout=subprocess.PIPE);
-      popen.wait()
-      output = popen.stdout.read();
-
-  elif problem  in ["2d_eulersmooth", "2d_burgers"]:
-    assert(len(args.mesh) == 2)
-
-    # find stencil size needed for the FOM
-    schemeString = module.base_dic[scenario]['fom']['inviscidFluxReconstruction']
-    stencilSize  = inviscid_flux_string_to_stencil_size(schemeString)
-
-    bounds = [-1.0, 1.0, -1.0, 1.0]
-    nx, ny = meshSize[0], meshSize[1]
-    outDir = workDir + "/full_mesh" + str(nx) + "x" + str(ny)
-    if os.path.exists(outDir):
-      print('{} already exists'.format(outDir))
-    else:
-      print('Generating mesh {}'.format(outDir))
-      meshArgs = ("python3", \
-                  pdaMeshDir + '/create_full_mesh.py',\
-                  "-n", str(nx), str(ny),\
-                  "--outDir", outDir,\
-                  "--bounds", str(bounds[0]), str(bounds[1]), str(bounds[2]), str(bounds[3]),\
-                  "-s", str(stencilSize), \
-                  "--periodic", "x", "y")
-      popen  = subprocess.Popen(meshArgs, stdout=subprocess.PIPE);
-      popen.wait()
-      output = popen.stdout.read();
-
+  # now, generate mesh if needed
+  if os.path.exists(outDir):
+    print('{} already exists'.format(outDir))
   else:
-    sys.exit("make_fom_mesh: invalid problem = {}".format(problemName))
+    print('Generating mesh {}'.format(outDir))
+    popen  = subprocess.Popen(meshArgs, stdout=subprocess.PIPE);
+    popen.wait()
+    output = popen.stdout.read();
 
 # ----------------------------------------------------------------
 def find_full_mesh_and_ensure_unique(workDir):
@@ -224,24 +150,17 @@ You can only have a single FULL mesh the working directory.")
   return fomFullMeshes[0]
 
 # -------------------------------------------------------------------
-def run_single_fom(runDir, appObj, dic, finalTime):
-  # need to update the final time in dic since it was
-  # set by the calling function
-  del dic['finalTimeTrain']
-  del dic['finalTimeTest']
-  dic['finalTime'] = float(finalTime)
-
+def run_single_fom(runDir, appObj, dic):
   # write to yaml the dic to save info for later
   inputFile = runDir + "/input.yaml"
   write_dic_to_yaml_file(inputFile, dic)
-
-  from decimal import Decimal
 
   # extrac params
   odeScheme         = dic['odeScheme']
   dt                = float(dic['dt'])
   stateSamplingFreq = int(dic['stateSamplingFreq'])
   rhsSamplingFreq   = int(dic['velocitySamplingFreq'])
+  finalTime         = float(dic['finalTime'])
   numSteps          = int(round(Decimal(finalTime)/Decimal(dt), 8))
   print("numSteps = ", numSteps)
 
@@ -252,9 +171,9 @@ def run_single_fom(runDir, appObj, dic, finalTime):
 
   start = time.time()
   obsO = FomObserver(numDofs, stateSamplingFreq, rhsSamplingFreq, numSteps)
-  if odeScheme in ["RungeKutta4", "RK4"]:
+  if odeScheme in ["RungeKutta4", "RK4", "rungekutta4", "rk4"]:
     pda.advanceRK4(appObj, yn, dt, numSteps, observer=obsO)
-  elif odeScheme == "SSPRK3":
+  elif odeScheme in ["SSPRK3", "ssprk3"]:
     pda.advanceSSP3(appObj, yn, dt, numSteps, observer=obsO)
   else:
     sys.exit("run_single_fom: invalid ode scheme = {}".format(odeScheme))
@@ -272,9 +191,10 @@ def run_single_fom(runDir, appObj, dic, finalTime):
 # -------------------------------------------------------------------
 def run_foms(workDir, problem, module, scenario, \
              testOrTrainString, fomMesh):
+
   assert(testOrTrainString in ["train", "test"])
 
-  # load the parameter values to run FOM
+  # load the list of parameter values to run FOM for
   param_values = None
   if testOrTrainString == "train":
     param_values = module.train_points[scenario]
@@ -287,132 +207,40 @@ def run_foms(workDir, problem, module, scenario, \
   # now we need to create the problem obj and run
   # but how we do this is specific to each problem
   for k,val in param_values.items():
-    appObj = None
+    fomObj = None
+
     # get the dic with base parameters for the FOM
     fomDic   = module.base_dic[scenario]['fom'].copy()
     coeffDic = module.base_dic[scenario]['physicalCoefficients'].copy()
 
-    # ----------------------
-    # --- 2d swe specific ---
-    # ----------------------
-    if problem == "2d_swe":
-      probId    = pda.Swe2d.SlipWall
-      schemeStr = fomDic['inviscidFluxReconstruction']
-      schemeEnu = inviscid_flux_string_to_enum(schemeStr)
-      gravity   = coeffDic['gravity']
-      coriolis  = coeffDic['coriolis']
-      pulse     = coeffDic['pulsemag']
+    # create problem using in-module function
+    fomObj = module.create_problem_for_scenario(scenario, fomMeshObj, \
+                                                coeffDic, fomDic, val)
 
-      if scenario == 1:
-        coriolis = val
-      else:
-        sys.exit("invalid scenario {} for 2d_swe".format(scenario))
-
-      fomDic['gravity']  = gravity
-      fomDic['coriolis'] = coriolis
-      fomDic['pulse']    = pulse
-      appObj = pda.create_problem(fomMeshObj, probId, schemeEnu, gravity, coriolis, pulse)
-
-    # ----------------------
-    # --- 2d gs specific ---
-    # ----------------------
-    elif problem == "2d_gs":
-      probId   = pda.DiffusionReaction2d.GrayScott
-      diff_A   = coeffDic['diffusionA']
-      diff_B   = coeffDic['diffusionB']
-      feedRate = coeffDic['feedRate']
-      killRate = coeffDic['killRate']
-
-      if scenario == 1:
-        killRate = val
-      elif scenario == 2:
-        feedRate = val
-      else:
-        sys.exit("invalid scenario {} for 2d_gs".format(scenario))
-
-      fomDic['diffusionA'] = diff_A
-      fomDic['diffusionB'] = diff_B
-      fomDic['feedRate']   = feedRate
-      fomDic['killRate']   = killRate
-      scheme = pda.ViscousFluxReconstruction.FirstOrder
-      appObj = pda.create_problem(fomMeshObj, probId, scheme, diff_A, diff_B, feedRate, killRate)
-
-      # ---------------------------
-      # --- 2d burgers specific ---
-      # ---------------------------
-    elif problem == "2d_burgers":
-      probId      = pda.AdvectionDiffusion2d.Burgers
-      schemeStr   = fomDic['inviscidFluxReconstruction']
-      schemeEnu   = inviscid_flux_string_to_enum(schemeStr)
-      pulsemag    = coeffDic['pulsemag']
-      pulsespread = coeffDic['pulsespread']
-      diffusion   = coeffDic['diffusion']
-      pulsecenter = coeffDic['pulsecenter']
-
-      if scenario == 1:
-        pulsespread = val
-      else:
-        sys.exit("invalid scenario {} for 2d_burgers".format(scenario))
-
-      fomDic['pulsemag']    = pulsemag
-      fomDic['pulsespread'] = pulsespread
-      fomDic['diffusion']   = diffusion
-      fomDic['pulsecenter'] = pulsecenter
-      appObj  = pda.create_problem(fomMeshObj, probId, schemeEnu, \
-                                   pulsemag, pulsespread, diffusion, \
-                                   pulsecenter[0], pulsecenter[1])
-
-    # ----------------------
-    # --- 2d rti specific ---
-    # ----------------------
-    elif problem == "2d_rti":
-      probId    = pda.Euler2d.RayleighTaylor
-      schemeStr = fomDic['inviscidFluxReconstruction']
-      schemeEnu = inviscid_flux_string_to_enum(schemeStr)
-      amplitude = coeffDic['amplitude']
-
-      if scenario == 1:
-        amplitude = val
-      else:
-        sys.exit("invalid scenario {} for 2d_rti".format(scenario))
-
-      fomDic['amplitude']  = amplitude
-      appObj = pda.create_problem(fomMeshObj, probId, schemeEnu, amplitude)
-
-    # --------------------------------
-    # --- 2d euler smooth specific ---
-    # --------------------------------
-    elif problem == "2d_eulersmooth":
-      probId    = pda.Euler2d.PeriodicSmooth
-      schemeStr = fomDic['inviscidFluxReconstruction']
-      schemeEnu = inviscid_flux_string_to_enum(schemeStr)
-
-      if scenario == 1:
-        pass
-      else:
-        sys.exit("invalid scenario {} for 2d_rti".format(scenario))
-
-      appObj = pda.create_problem(fomMeshObj, probId, schemeEnu)
-
-    else:
-      sys.exit("invalid problem = {}".format(problemName))
-
-    # note that the train/test simulation time might differ
-    # so make sure we pick the right one
-    finalTime  = fomDic['finalTimeTrain'] if testOrTrainString == "train" \
+    # the train/test simulation time might differ, ensure we pick the right one
+    finalTime = fomDic['finalTimeTrain'] if testOrTrainString == "train" \
       else fomDic['finalTimeTest']
 
-    # now we can do the FOM run for current parameter
+    # set the final time in dic
+    del fomDic['finalTimeTrain']
+    del fomDic['finalTimeTest']
+    fomDic['finalTime'] = float(finalTime)
+
+    # run FOM run for current fomDic
     runDir = workDir + "/fom_"+testOrTrainString+"_"+str(k)
     if not os.path.exists(runDir):
       os.makedirs(runDir)
       print("Doing FOM run for {}".format(runDir))
-      run_single_fom(runDir, appObj, fomDic, finalTime)
+      run_single_fom(runDir, fomObj, fomDic)
     else:
       print("FOM run {} already exists".format(runDir))
 
 # -------------------------------------------------------------------
 def make_uniform_partitions_2d(workDir, module, scenario, fullMeshPath):
+  '''
+  tile a 2d mesh using uniform partitions if possible
+  Info for target tiling layout is extracted from the scenario.
+  '''
   this_file_path = pathlib.Path(__file__).parent.absolute()
 
   for pIt in module.odrom_partitioning_topol[scenario]:
@@ -437,10 +265,11 @@ def make_uniform_partitions_2d(workDir, module, scenario, fullMeshPath):
 
 
 # -------------------------------------------------------------------
-def make_full_mesh_for_odrom_using_partition_based_indexing(workDir, pdaDir, module, fomMesh):
+def make_full_mesh_for_odrom_using_partition_based_indexing(workDir, pdaDir, \
+                                                            module, fomMesh):
   '''
   for FULL od-rom without HR, for performance reasons,
-  we don't/should not use the same full mesh used in the fom.
+  we do not/should not use the same full mesh used in the fom.
   We need to make a new full mesh with a new indexing
   that is consistent with the partitions and allows continguous storage
   of the state and rhs within each tile
@@ -486,7 +315,7 @@ def make_full_mesh_for_odrom_using_partition_based_indexing(workDir, pdaDir, mod
 def do_svd_py(mymatrix, lsvFile, svaFile):
   timing = np.zeros(1)
   start = time.time()
-  U,S,_ = linalg.svd(mymatrix, full_matrices=False, lapack_driver='gesdd')
+  U,S,_ = scipyla.svd(mymatrix, full_matrices=False, lapack_driver='gesdd')
   end = time.time()
   elapsed = end - start
   timing[0] = elapsed
@@ -519,71 +348,67 @@ def do_svd_py(mymatrix, lsvFile, svaFile):
   # np.savetxt(outDir+'/timings.txt', timing)
 
 # -------------------------------------------------------------------
-def mapToReferenceRange(x):
-  xmax,xmin = np.max(x),np.min(x)
-  xmid = 0.5 * ( xmax + xmin )
-  return 2. * (x - xmid) / (xmax - xmin)
+def replicate_bases_for_multiple_dofs(M, numDofsPerCell):
+  if numDofsPerCell == 1:
+    return M
+
+  elif numDofsPerCell == 2:
+    K1 = np.shape(M)[1]
+    K2 = np.shape(M)[1]
+    Phi = np.zeros((M.shape[0]*numDofsPerCell, K1+K2))
+    Phi[0::2,    0: K1]       = M
+    Phi[1::2,   K1: K1+K2]    = M
+    return Phi
+
+  elif numDofsPerCell == 3:
+    K1 = np.shape(M)[1]
+    K2 = np.shape(M)[1]
+    K3 = np.shape(M)[1]
+    Phi = np.zeros((M.shape[0]*numDofsPerCell, K1+K2+K3))
+    Phi[0::3,    0: K1]       = M
+    Phi[1::3,   K1: K1+K2]    = M
+    Phi[2::3,K1+K2: K1+K2+K3] = M
+    return Phi
+
+  elif numDofsPerCell == 4:
+    K1 = np.shape(M)[1]
+    K2 = np.shape(M)[1]
+    K3 = np.shape(M)[1]
+    K4 = np.shape(M)[1]
+    Phi = np.zeros((M.shape[0]*numDofsPerCell, K1+K2+K3+K4))
+    Phi[0::4,       0: K1]       = M
+    Phi[1::4,     K1 : K1+K2]    = M
+    Phi[2::4,   K1+K2: K1+K2+K3] = M
+    Phi[3::4,K1+K2+K3: K1+K2+K3+K4] = M
+    return Phi
+  else:
+    sys.exit("Invalid numDofsPerCell")
 
 # -------------------------------------------------------------------
-def create_legendre_basis(x, y, order):
-  '''
-  Create a 2D legendre polynomial basis at coordinates
-  specified by lists x and y. "order" specifies the maximum
-  order of polynomials in x and y directions
-  Outputs M, an N by N_basis, where N is the number of
-  coordinates and N_basis = (order+1)^2  is the number of
-  basis polynomials
-  '''
-  assert(len(x)==len(y))
-  N = len(x)
-  x = np.array(x)
-  y = np.array(y)
+def compute_poly_bases_same_order_all_tiles(fomMesh, outDir, \
+                                            partInfoDir, \
+                                            targetOrder, \
+                                            numDofsPerCell):
 
-  # map x,y to [-1,1]
-  x = mapToReferenceRange(x)
-  y = mapToReferenceRange(y)
-
-  # create legendre polynomials
-  Poly = []
-  for p in range(order+1):
-    Poly.append(legendre(p))
-
-  # evaluate legendre polynomial products
-  M = np.zeros((N,(order+1)**2), order='F')
-  for px in range(order+1):
-    for py in range(order+1):
-      icol = px * (order+1) + py
-      M[:,icol] = Poly[px](x) * Poly[py](y)
-
-  return M
-
-# -------------------------------------------------------------------
-def compute_partition_based_poly_bases_same_order_in_all_tiles(fomMesh, outDir, \
-                                                               partInfoDir, targetOrder):
-  fomTotCells = find_total_cells_from_info_file(fomMesh)
-  totFomDofs  = fomTotCells*module.numDofsPerCell
-
-  xcoords = np.loadtxt(fomMesh+"/coordinates.dat")[:,1]
-  ycoords = np.loadtxt(fomMesh+"/coordinates.dat")[:,2]
-
+  fomCellsXcoords = np.loadtxt(fomMesh+"/coordinates.dat")[:,1]
+  fomCellsYcoords = np.loadtxt(fomMesh+"/coordinates.dat")[:,2]
   tiles = np.loadtxt(partInfoDir+"/topo.txt")
   nTilesX, nTilesY = int(tiles[0]), int(tiles[1])
 
-  totalModesCount = 0
+  polyObj = LegendreBases2d("totalOrder")
   modesPerTile = {}
-  # loop over each tile
   for tileId in range(nTilesX*nTilesY):
     myFile = partInfoDir + "/cell_gids_wrt_full_mesh_p_"+str(tileId)+".txt"
     myRows = np.loadtxt(myFile, dtype=int)
 
-    myX = xcoords[myRows]
-    myY = ycoords[myRows]
+    myX, myY = fomCellsXcoords[myRows], fomCellsYcoords[myRows]
     lsvFile = outDir + '/lsv_state_p_'+str(tileId)
 
-    U = create_legendre_basis(myX, myY, targetOrder)
-    U,_ = np.linalg.qr(U,mode='reduced')
+    U0 = polyObj(targetOrder, myX, myY)
+    #U0 = create_legendre_basis_max_order(myX, myY, targetOrder)
+    U  = replicate_bases_for_multiple_dofs(U0, numDofsPerCell)
+    U,_ = np.linalg.qr(U, mode='reduced')
 
-    print("U shape = ", U.shape)
     fileo = open(lsvFile, "wb")
     r=np.int64(U.shape[0])
     np.array([r]).tofile(fileo)
@@ -594,35 +419,40 @@ def compute_partition_based_poly_bases_same_order_in_all_tiles(fomMesh, outDir, 
     fileo.close()
 
     modesPerTile[tileId] = U.shape[1]
-    totalModesCount += U.shape[1]
 
-  return totalModesCount, modesPerTile
+  np.savetxt(outDir+"/modes_per_tile.txt", \
+             np.array(list(modesPerTile.values())), \
+             fmt="%5d")
 
 # -------------------------------------------------------------------
-def compute_partition_based_poly_bases_to_match_pod(fomMesh, outDir, \
-                                                    partInfoDir, \
-                                                    podModesPerTileToMatch, \
-                                                    tag):
-  fomTotCells = find_total_cells_from_info_file(fomMesh)
-  totFomDofs  = fomTotCells*module.numDofsPerCell
-  xcoords = np.loadtxt(fomMesh+"/coordinates.dat")[:,1]
-  ycoords = np.loadtxt(fomMesh+"/coordinates.dat")[:,2]
+def compute_poly_bases_to_match_pod(fomMesh, outDir, \
+                                    partInfoDir, \
+                                    podModesPerTileToMatch,
+                                    numDofsPerCell):
+
+  fomCellsXcoords = np.loadtxt(fomMesh+"/coordinates.dat")[:,1]
+  fomCellsYcoords = np.loadtxt(fomMesh+"/coordinates.dat")[:,2]
   tiles = np.loadtxt(partInfoDir+"/topo.txt")
   nTilesX, nTilesY = int(tiles[0]), int(tiles[1])
 
-  totalModesCount = 0
+  polyObj = LegendreBases2d("totalOrder")
   modesPerTile = {}
   for tileId in range(nTilesX*nTilesY):
     myFile = partInfoDir + "/cell_gids_wrt_full_mesh_p_"+str(tileId)+".txt"
     myRows = np.loadtxt(myFile, dtype=int)
 
-    myX = xcoords[myRows]
-    myY = ycoords[myRows]
+    myX, myY = fomCellsXcoords[myRows], fomCellsYcoords[myRows]
     lsvFile = outDir + '/lsv_state_p_'+str(tileId)
 
-    order = math.ceil(np.sqrt(podModesPerTileToMatch[tileId])) - 1
+    # the order we want has to be found such that the total modes
+    # matches the pod modes in that tile, but we need to account
+    # also for the fact that we might have multiple dofs/cell
+    target = int(podModesPerTileToMatch[tileId]/numDofsPerCell)
+    order = polyObj.findClosestOrderToMatchTargetBasesCount(target)
+    print("order = {}".format(order))
 
-    U = create_legendre_basis(myX, myY, order)
+    U0 = polyObj(order, myX, myY)
+    U  = replicate_bases_for_multiple_dofs(U0, numDofsPerCell)
     U,_ = np.linalg.qr(U,mode='reduced')
 
     print("tile = {}, podModesCount = {}, polyModesCount = {}".format(tileId, \
@@ -637,20 +467,14 @@ def compute_partition_based_poly_bases_to_match_pod(fomMesh, outDir, \
     UT.tofile(fileo)
     fileo.close()
 
-    if tag == -1:
-      # I want to only use as many to match exactly the POD
-      modesPerTile[tileId] = podModesPerTileToMatch[tileId]
-      totalModesCount += podModesPerTileToMatch[tileId]
-    elif tag==-2:
-      modesPerTile[tileId] = U.shape[1]
-      totalModesCount += U.shape[1]
-    else:
-      sys.exit("Invalid tag = {}".format(tag))
+    modesPerTile[tileId] = U.shape[1]
 
-  return totalModesCount, modesPerTile
+  np.savetxt(outDir+"/modes_per_tile.txt", \
+             np.array(list(modesPerTile.values())), \
+             fmt="%5d")
 
 # -------------------------------------------------------------------
-def compute_partition_based_pod(workDir, setId, dataDirs, module, fomMesh):
+def compute_partition_based_state_and_rhs_pod(workDir, setId, dataDirs, module, fomMesh):
   '''
   compute pod for both state and rhs using fom train data
   '''
@@ -658,8 +482,10 @@ def compute_partition_based_pod(workDir, setId, dataDirs, module, fomMesh):
   totFomDofs  = fomTotCells*module.numDofsPerCell
 
   # only load snapshots once
-  fomStateSnapsFullDomain = load_fom_state_snapshot_matrix(dataDirs, totFomDofs, module.numDofsPerCell)
-  fomRhsSnapsFullDomain   = load_fom_rhs_snapshot_matrix(dataDirs,   totFomDofs, module.numDofsPerCell)
+  fomStateSnapsFullDomain = load_fom_state_snapshot_matrix(dataDirs, totFomDofs, \
+                                                           module.numDofsPerCell)
+  fomRhsSnapsFullDomain   = load_fom_rhs_snapshot_matrix(dataDirs,   totFomDofs, \
+                                                         module.numDofsPerCell)
   print("pod: fomStateSnapsFullDomain.shape = ", fomStateSnapsFullDomain.shape)
   print("pod:   fomRhsSnapsFullDomain.shape = ", fomRhsSnapsFullDomain.shape)
   print("")
@@ -697,9 +523,9 @@ def compute_partition_based_pod(workDir, setId, dataDirs, module, fomMesh):
         # to get only the data that belongs to me.
         myStateSlice = fomStateSnapsFullDomain[myRowsInFullState, :]
         myRhsSlice   = fomRhsSnapsFullDomain[myRowsInFullState, :]
-        print("pod: tileId={}".format(tileId))
-        print("  stateSlice.shape={}".format(myStateSlice.shape))
-        print("  rhsSlice.shape  ={}".format(myRhsSlice.shape))
+        print("pod: tileId={}: stateSlice.Shape={}, rhsSlice.shape={}".format(tileId, \
+                                                                              myStateSlice.shape,\
+                                                                              myRhsSlice.shape))
 
         # compute svd
         lsvFile = outDir + '/lsv_state_p_'+str(tileId)
@@ -711,70 +537,9 @@ def compute_partition_based_pod(workDir, setId, dataDirs, module, fomMesh):
         do_svd_py(myRhsSlice, lsvFile, svaFile)
 
 # -------------------------------------------------------------------
-def compute_partition_based_entropy_pod(workDir, setId, dataDirs, module, fomMesh):
-  print("compute_partition_based_entropy_pod")
-
-  fomTotCells = find_total_cells_from_info_file(fomMesh)
-  totFomDofs  = fomTotCells*module.numDofsPerCell
-
-  # load conservative snapshots
-  fomStateSnapsFullDomain = load_fom_state_snapshot_matrix(dataDirs, totFomDofs, \
-                                                           module.numDofsPerCell)
-
-  # conver to entropy
-  fomStateSnapsFullDomainEntropy = conservative_to_entropy(fomStateSnapsFullDomain, \
-                                                           module.numDofsPerCell, \
-                                                           module.dimensionality)
-
-  print("pod: fomStateSnapsFullDomain.shape = ", fomStateSnapsFullDomain.shape)
-  print("")
-
-  # with the FOM data loaded for a target setId (i.e. set of runs)
-  # loop over all partitions and compute local POD.
-  # To do this, we find in workDir all directories with info about partitions
-  # which identifies all possible partitions
-  partsInfoDirs = [workDir+'/'+d for d in os.listdir(workDir) \
-                   if "od_info_" in d]
-
-  for partitionInfoDirIt in partsInfoDirs:
-    # I need to extract an identifier from the direc so that I can
-    # use this string to uniquely create a corresponding directory
-    # where to store the POD data
-    stringIdentifier = string_identifier_from_partition_info_dir(partitionInfoDirIt)
-    tiles = np.loadtxt(partitionInfoDirIt+"/topo.txt")
-    nTilesX, nTilesY = int(tiles[0]), int(tiles[1])
-
-    outDir = path_to_pod_data_dir(workDir, stringIdentifier, setId)
-    if os.path.exists(outDir):
-      print('{} already exists'.format(outDir))
-    else:
-      os.system('mkdir -p ' + outDir)
-
-      # loop over each tile
-      for tileId in range(nTilesX*nTilesY):
-        # I need to compute POD for both STATE and RHS
-        # using FOM data LOCAL to myself, so need to load
-        # which rows of the FOM state I own and use to slice
-        myFile = partitionInfoDirIt + "/state_vec_rows_wrt_full_mesh_p_"+str(tileId)+".txt"
-        myRowsInFullState = np.loadtxt(myFile, dtype=int)
-
-        # after loading the row indices, slice the FOM STATE and RHS snapshots
-        # to get only the data that belongs to me.
-        myStateSlice = fomStateSnapsFullDomainEntropy[myRowsInFullState, :]
-        print("pod: tileId={}".format(tileId))
-        print("  stateSlice.shape={}".format(myStateSlice.shape))
-
-        # compute svd
-        lsvFile = outDir + '/lsv_state_p_'+str(tileId)
-        svaFile = outDir + '/sva_state_p_'+str(tileId)
-        do_svd_py(myStateSlice, lsvFile, svaFile)
-
-# -------------------------------------------------------------------
 def compute_cumulative_energy(svalues, targetPercentage):
-
   if targetPercentage == 100.:
     return len(svalues)
-
   else:
     # convert percentage to decimal
     target = float(targetPercentage)/100.
@@ -789,11 +554,15 @@ def compute_cumulative_energy(svalues, targetPercentage):
     return len(svalues)
 
 # -------------------------------------------------------------------
+def compute_total_modes_across_all_tiles(modesPerTileDic):
+  return np.sum(list(modesPerTileDic.values()))
+
+# -------------------------------------------------------------------
 def find_modes_per_tile_from_target_energy(podDir, energy):
   def get_tile_id(stringIn):
     return int(stringIn.split('_')[-1])
 
-  result = {}
+  modesPerTileDic = {}
   # find all sing values files
   singValsFiles = [podDir+'/'+f for f in os.listdir(podDir) \
                    if "sva_state" in f]
@@ -804,33 +573,20 @@ def find_modes_per_tile_from_target_energy(podDir, energy):
     singValues = np.loadtxt(it)
     tileId = get_tile_id(it)
     K = compute_cumulative_energy(singValues, energy)
-    result[tileId] = max(K, 5)
+    modesPerTileDic[tileId] = max(K, 5)
 
-  totalModesCount = 0
-  for k,v in result.items():
-    totalModesCount += int(v)
-
-  return totalModesCount, result
+  return modesPerTileDic
 
 
 # -------------------------------------------------------------------
 def make_od_rom_initial_condition(workDir, appObjForIc, \
                                   partitionInfoDir, \
                                   basesDir, modesPerTileDic, \
-                                  romSizeOverAllPartitions, \
-                                  useEntropy):
-  nTiles = len(modesPerTileDic.keys())
-  fomIc = None
-  if useEntropy:
-    fomIcCons = appObjForIc.initialCondition()
-    fomIc     = conservative_to_entropy(fomIcCons, \
-                                        module.numDofsPerCell, \
-                                        module.dimensionality)
-  else:
-    fomIc = appObjForIc.initialCondition()
-
+                                  romSizeOverAllPartitions):
+  nTiles   = len(modesPerTileDic.keys())
+  fomIc    = appObjForIc.initialCondition()
   romState = np.zeros(romSizeOverAllPartitions)
-  romStateStart = 0
+  romStateSpanStart = 0
   for tileId in range(nTiles):
     myK             = modesPerTileDic[tileId]
     myPhi           = load_basis_from_binary_file(basesDir + "/lsv_state_p_" + str(tileId) )[:,0:myK]
@@ -838,8 +594,8 @@ def make_od_rom_initial_condition(workDir, appObjForIc, \
     myStateRows     = np.loadtxt(myStateRowsFile, dtype=int)
     myFomIcSlice    = fomIc[myStateRows]
     tmpyhat         = np.dot(myPhi.transpose(), myFomIcSlice)
-    romState[romStateStart:romStateStart+myK] = np.copy(tmpyhat)
-    romStateStart += myK
+    romState[romStateSpanStart:romStateSpanStart+myK] = np.copy(tmpyhat)
+    romStateSpanStart += myK
   return romState
 
 # -------------------------------------------------------------------
@@ -848,11 +604,9 @@ def run_full_od_galerkin_for_all_test_values(workDir, problem, module, \
                                              partInfoDir, basesDir, \
                                              energyValue,
                                              polyOrder, \
-                                             romSizeOverAllPartitions, \
                                              modesPerTileDic, \
                                              romMeshObj, \
                                              nTiles, setId, \
-                                             useEntropy, \
                                              basesKind):
 
   # this is odrom WITHOUT HR, so the following should hold:
@@ -860,6 +614,8 @@ def run_full_od_galerkin_for_all_test_values(workDir, problem, module, \
   sampleDofsCount  = romMeshObj.sampleMeshSize()*module.numDofsPerCell
   assert(stencilDofsCount == sampleDofsCount)
   fomTotalDofs = stencilDofsCount
+
+  romSizeOverAllPartitions = compute_total_modes_across_all_tiles(modesPerTileDic)
 
   fomMeshObj = pda.load_cellcentered_uniform_mesh(fomMeshPath)
   partitionStringIdentifier = string_identifier_from_partition_info_dir(partInfoDir)
@@ -869,7 +625,7 @@ def run_full_od_galerkin_for_all_test_values(workDir, problem, module, \
 
     outDir = workDir + "/odrom_full_"+partitionStringIdentifier+"_"+basesKind
     if polyOrder != None:
-      outDir += "_"+str(polyOrder)
+      outDir += "_order_"+str(polyOrder)
 
     if energyValue != None:
       outDir += "_"+str(energyValue)
@@ -889,124 +645,15 @@ def run_full_od_galerkin_for_all_test_values(workDir, problem, module, \
       appObjForIc  = None
       appObjForRom = None
 
-      # ----------------------
-      # --- 2d swe specific ---
-      # ----------------------
-      if problem == "2d_swe":
-        probId    = pda.Swe2d.SlipWall
-        schemeStr = romRunDic['inviscidFluxReconstruction']
-        schemeEnu = inviscid_flux_string_to_enum(schemeStr)
+      appObjForIc  = module.create_problem_for_scenario(scenario, fomMeshObj, \
+                                                        coeffDic, romRunDic, val)
+      appObjForRom = module.create_problem_for_scenario(scenario, romMeshObj,
+                                                        coeffDic, romRunDic, val)
+      # these should hold
+      assert(appObjForIc  != None)
+      assert(appObjForRom != None)
 
-        # preset values from problem dic
-        gravity  = coeffDic['gravity']
-        coriolis = coeffDic['coriolis']
-        pulse    = coeffDic['pulsemag']
-        # change if something needs to be changed
-        if scenario == 1:
-          coriolis = val
-        else:
-          sys.exit("invalid scenario {} for 2d_swe".format(scenario))
-
-        # store
-        romRunDic['gravity']  = gravity
-        romRunDic['coriolis'] = coriolis
-        romRunDic['pulse']    = pulse
-        appObjForIc  = pda.create_problem(fomMeshObj, probId, schemeEnu, gravity, coriolis, pulse)
-        appObjForRom = pda.create_problem(romMeshObj, probId, schemeEnu, gravity, coriolis, pulse)
-
-      # ----------------------
-      # --- 2d gs specific ---
-      # ----------------------
-      elif problem == "2d_gs":
-        probId   = pda.DiffusionReaction2d.GrayScott
-        diff_A   = coeffDic['diffusionA']
-        diff_B   = coeffDic['diffusionB']
-        feedRate = coeffDic['feedRate']
-        killRate = coeffDic['killRate']
-
-        if scenario == 1:
-          killRate = val
-        elif scenario == 2:
-          feedRate = val
-        else:
-          sys.exit("invalid scenario {} for 2d_gs".format(scenario))
-
-        romRunDic['diffusionA'] = diff_A
-        romRunDic['diffusionB'] = diff_B
-        romRunDic['feedRate']   = feedRate
-        romRunDic['killRate']   = killRate
-        scheme = pda.ViscousFluxReconstruction.FirstOrder
-        appObjForIc  = pda.create_problem(fomMeshObj, probId, scheme, diff_A, diff_B, feedRate, killRate)
-        appObjForRom = pda.create_problem(romMeshObj, probId, scheme, diff_A, diff_B, feedRate, killRate)
-
-      # ---------------------------
-      # --- 2d burgers specific ---
-      # ---------------------------
-      elif problem == "2d_burgers":
-        probId      = pda.AdvectionDiffusion2d.Burgers
-        schemeStr   = romRunDic['inviscidFluxReconstruction']
-        schemeEnu   = inviscid_flux_string_to_enum(schemeStr)
-        pulsemag    = coeffDic['pulsemag']
-        pulsespread = coeffDic['pulsespread']
-        diffusion   = coeffDic['diffusion']
-        pulsecenter = coeffDic['pulsecenter']
-
-        if scenario == 1:
-          pulsespread = val
-        else:
-          sys.exit("invalid scenario {} for 2d_burgers".format(scenario))
-
-        romRunDic['pulsemag']    = pulsemag
-        romRunDic['pulsespread'] = pulsespread
-        romRunDic['diffusion']   = diffusion
-        romRunDic['pulsecenter'] = pulsecenter
-        appObjForIc  = pda.create_problem(fomMeshObj, probId, schemeEnu, \
-                                          pulsemag, pulsespread, diffusion, \
-                                          pulsecenter[0], pulsecenter[1])
-        appObjForRom = pda.create_problem(romMeshObj, probId, schemeEnu, \
-                                          pulsemag, pulsespread, diffusion, \
-                                          pulsecenter[0], pulsecenter[1])
-
-      # ----------------------
-      # --- 2d rti specific ---
-      # ----------------------
-      elif problem == "2d_rti":
-        probId    = pda.Euler2d.RayleighTaylor
-        schemeStr = romRunDic['inviscidFluxReconstruction']
-        schemeEnu = inviscid_flux_string_to_enum(schemeStr)
-        amplitude = coeffDic['amplitude']
-
-        if scenario == 1:
-          amplitude = val
-        else:
-          sys.exit("invalid scenario {} for 2d_rti".format(scenario))
-
-        romRunDic['amplitude']  = amplitude
-        appObjForIc  = pda.create_problem(fomMeshObj, probId, schemeEnu, amplitude)
-        appObjForRom = pda.create_problem(romMeshObj, probId, schemeEnu, amplitude)
-
-      # --------------------------------
-      # --- 2d euler smooth specific ---
-      # --------------------------------
-      elif problem == "2d_eulersmooth":
-        probId    = pda.Euler2d.PeriodicSmooth
-        schemeStr = romRunDic['inviscidFluxReconstruction']
-        schemeEnu = inviscid_flux_string_to_enum(schemeStr)
-
-        if scenario == 1:
-          pass
-        else:
-          sys.exit("invalid scenario {} for 2d_rti".format(scenario))
-
-        appObjForIc  = pda.create_problem(fomMeshObj, probId, schemeEnu)
-        appObjForRom = pda.create_problem(romMeshObj, probId, schemeEnu)
-
-      else:
-        sys.exit("Invalid problem = {}".format(problem))
-
-      # ----------------------------------------
-      # nothing should be changed below because
-      # the following is problem-independent
+      # write things to run directory
       f = open(outDir+"/rom_dofs_count.txt", "w")
       f.write(str(romSizeOverAllPartitions))
       f.close()
@@ -1015,30 +662,25 @@ def run_full_od_galerkin_for_all_test_values(workDir, problem, module, \
                  np.array(list(modesPerTileDic.values())),
                  fmt="%5d")
 
-      # if basesKind == "using_pod_bases":
-      #   romRunDic['energy'] = energyValueOrPolyOrder
-      # elif basesKind == "using_poly_bases":
-      #   romRunDic['poly_order'] = energyValueOrPolyOrder
-      # else:
-      #   sys.exit("Invalid kind = {}".format(basesKind))
+      if basesKind == "using_pod_bases":
+        romRunDic['energy'] = energyValue
+      if basesKind == "using_poly_bases":
+        romRunDic['polyOrder'] = polyOrder
 
+      romRunDic['basesDir'] = basesDir
       romRunDic['partioningInfo'] = partInfoDir
       inputFile = outDir + "/input.yaml"
       write_dic_to_yaml_file(inputFile, romRunDic)
 
-      # these should be valid
-      assert(appObjForIc  != None)
-      assert(appObjForRom != None)
-
-      romState = make_od_rom_initial_condition(workDir, appObjForIc, partInfoDir, \
-                                               basesDir, modesPerTileDic, \
-                                               romSizeOverAllPartitions, \
-                                               useEntropy)
+      romState = make_od_rom_initial_condition(workDir, appObjForIc, \
+                                               partInfoDir, basesDir, \
+                                               modesPerTileDic, \
+                                               romSizeOverAllPartitions)
 
       # construct odrom object
       odRomObj = OdRomFull(basesDir, fomTotalDofs, modesPerTileDic, \
                            module.dimensionality, module.numDofsPerCell, \
-                           partInfoDir, useEntropy)
+                           partInfoDir)
       # initial condition
       odRomObj.reconstructMemberFomStateFullMeshOrdering(romState)
       np.savetxt(outDir+"/y_rec_ic.txt", odRomObj.viewFomState())
@@ -1049,15 +691,17 @@ def run_full_od_galerkin_for_all_test_values(workDir, problem, module, \
       numSteps   = int(finalTime/dt)
       odeScheme  = romRunDic['odeScheme']
 
+      # create observer
+      stateSamplingFreq = int(romRunDic['stateSamplingFreq'])
+      obsO = RomObserver(stateSamplingFreq, numSteps, modesPerTileDic)
+
       pTimeStart = time.time()
-      if odeScheme == "SSPRK3":
-        odRomObj.runSSPRK3(outDir, romState, appObjForRom, numSteps, dt)
-      elif odeScheme in ["RungeKutta4", "RK4"]:
-        assert(useEntropy == False)
-        odRomObj.runRK4(outDir, romState, appObjForRom, numSteps, dt)
-      elif odeScheme in ["RungeKutta2", "RK2"]:
-        assert(useEntropy == False)
-        odRomObj.runRK2(outDir, romState, appObjForRom, numSteps, dt)
+      if odeScheme in ["SSPRK3", "ssprk3"]:
+        odRomObj.runSSPRK3(outDir, romState, appObjForRom, numSteps, dt, obsO)
+      elif odeScheme in ["RungeKutta4", "RK4", "rk4"]:
+        odRomObj.runRK4(outDir, romState, appObjForRom, numSteps, dt, obsO)
+      elif odeScheme in ["RungeKutta2", "RK2", "rk2"]:
+        odRomObj.runRK2(outDir, romState, appObjForRom, numSteps, dt, obsO)
 
       elapsed = time.time() - pTimeStart
       print("elapsed = {}".format(elapsed))
@@ -1065,14 +709,16 @@ def run_full_od_galerkin_for_all_test_values(workDir, problem, module, \
       f.write(str(elapsed))
       f.close()
 
+      # tell observer to write snapshots to file
+      obsO.write(outDir)
       # reconstruct final state
       odRomObj.reconstructMemberFomStateFullMeshOrdering(romState)
       np.savetxt(outDir+"/y_rec_final.txt", odRomObj.viewFomState())
 
 
 # -------------------------------------------------------------------
-def run_full_od_galerkin_pod_bases(workDir, problem, module, scenario, \
-                                   fomMeshPath, useEntropy=False):
+def run_full_od_galerkin_pod_bases(workDir, problem, module, \
+                                   scenario, fomMeshPath, ):
 
   partInfoDirs = [workDir+'/'+d for d in os.listdir(workDir) \
                   if "od_info" in d]
@@ -1109,10 +755,7 @@ def run_full_od_galerkin_pod_bases(workDir, problem, module, scenario, \
       # loop 3: over all target energies
       # ------
       for energyValue in module.odrom_energies[scenario]:
-        totalRomSize, modesPerTileDic = find_modes_per_tile_from_target_energy(currPodDir, \
-                                                                               energyValue)
-        print(totalRomSize)
-        print(modesPerTileDic)
+        modesPerTileDic = find_modes_per_tile_from_target_energy(currPodDir, energyValue)
 
         # -------
         # loop 4: over all test values
@@ -1121,15 +764,14 @@ def run_full_od_galerkin_pod_bases(workDir, problem, module, scenario, \
                                                  scenario, fomMeshPath, \
                                                  partInfoDirIt, currPodDir, \
                                                  energyValue, None, \
-                                                 totalRomSize, modesPerTileDic, \
-                                                 odRomMeshObj, \
-                                                 nTiles, setId, \
-                                                 useEntropy, \
+                                                 modesPerTileDic, \
+                                                 odRomMeshObj, nTiles, setId, \
                                                  "using_pod_bases")
 
 # -------------------------------------------------------------------
-def run_od_galerkin_same_poly_bases_in_all_tiles(workDir, problem, module, scenario, \
-                                                 fomMeshPath, polyOrders):
+def run_od_galerkin_same_poly_bases_in_all_tiles(workDir, problem, module, \
+                                                 scenario, fomMeshPath, \
+                                                 polyOrders):
 
   partInfoDirs = [workDir+'/'+d for d in os.listdir(workDir) \
                   if "od_info" in d]
@@ -1137,7 +779,7 @@ def run_od_galerkin_same_poly_bases_in_all_tiles(workDir, problem, module, scena
   # loop 1: over all decompositions
   # ------
   for partInfoDirIt in partInfoDirs:
-    tiles = np.loadtxt(partInfoDirIt+"/topo.txt")
+    tiles  = np.loadtxt(partInfoDirIt+"/topo.txt")
     nTilesX, nTilesY = int(tiles[0]), int(tiles[1])
     nTiles = nTilesX*nTilesY
     partitionStringIdentifier = string_identifier_from_partition_info_dir(partInfoDirIt)
@@ -1160,34 +802,37 @@ def run_od_galerkin_same_poly_bases_in_all_tiles(workDir, problem, module, scena
     # ------
     for orderIt in polyOrders:
       polyBasesDir = path_to_poly_bases_data_dir(workDir, partitionStringIdentifier, orderIt)
-      if os.path.exists(polyBasesDir):
-        print('{} already exists'.format(polyBasesDir))
-      else:
+      if not os.path.exists(polyBasesDir):
         os.system('mkdir -p ' + polyBasesDir)
-        totalRomSize, modesPerTileDic = compute_partition_based_poly_bases_same_order_in_all_tiles(fomMeshPath,\
-                                                                                                   polyBasesDir, \
-                                                                                                   partInfoDirIt, \
-                                                                                                   orderIt)
+        compute_poly_bases_same_order_all_tiles(fomMeshPath, polyBasesDir, \
+                                                partInfoDirIt, orderIt,\
+                                                module.numDofsPerCell)
 
-        # -------
-        # loop 3: over all test values
-        # ------
-        run_full_od_galerkin_for_all_test_values(workDir, problem, module, \
-                                                 scenario, fomMeshPath, \
-                                                 partInfoDirIt, polyBasesDir, \
-                                                 None, orderIt, \
-                                                 totalRomSize, modesPerTileDic, \
-                                                 odRomMeshObj, \
-                                                 nTiles,
-                                                 None, \
-                                                 False, \
-                                                 "using_poly_bases")
+      modesPerTileArr = np.loadtxt(polyBasesDir+"/modes_per_tile.txt", dtype=int)
+      modesPerTile = {}
+      if nTiles==1:
+        modesPerTile[0] = int(modesPerTileArr)
+      else:
+        for i in np.arange(nTiles):
+          modesPerTile[i] = int(modesPerTileArr[i])
 
+      # -------
+      # loop 3: over all test values
+      # ------
+      # for this case, we have a constant poly order in all tiles,
+      # so no setId needed because bases do not depend on the train data at all
+      setId = None
+      run_full_od_galerkin_for_all_test_values(workDir, problem, module, \
+                                               scenario, fomMeshPath, \
+                                               partInfoDirIt, polyBasesDir, \
+                                               None, orderIt, modesPerTile, \
+                                               odRomMeshObj, nTiles, setId, \
+                                               "using_poly_bases")
 
 # -------------------------------------------------------------------
-def run_od_galerkin_poly_bases_variable_order_per_tile(workDir, problem, \
-                                                       module, scenario, \
-                                                       fomMeshPath, tag):
+def run_od_poly_galerkin_find_order_matching_pod_modes_count(workDir, problem, \
+                                                             module, scenario, \
+                                                             fomMeshPath):
 
   partInfoDirs = [workDir+'/'+d for d in os.listdir(workDir) \
                   if "od_info" in d]
@@ -1224,37 +869,35 @@ def run_od_galerkin_poly_bases_variable_order_per_tile(workDir, problem, \
       # loop 3: over all target POD energies
       # ------
       for energyValue in module.odrom_energies[scenario]:
-        totalRomSizePod, modesPerTilePod = find_modes_per_tile_from_target_energy(currPodDir, \
-                                                                                  energyValue)
-        print(totalRomSizePod)
-        print(modesPerTilePod)
+        modesPerTilePod = find_modes_per_tile_from_target_energy(currPodDir, energyValue)
 
         # now that we know POD modes per tile, we create local poly bases
         # such that the order yields num of modes that matches POD bases
-        polyBasesDir = path_to_poly_bases_data_dir(workDir, partitionStringIdentifier, tag, energyValue, setId)
-        if os.path.exists(polyBasesDir):
-          print('{} already exists'.format(polyBasesDir))
-        else:
+        polyBasesDir = path_to_poly_bases_data_dir(workDir, partitionStringIdentifier, \
+                                                   -1, energyValue, setId)
+        if not os.path.exists(polyBasesDir):
           os.system('mkdir -p ' + polyBasesDir)
+          compute_poly_bases_to_match_pod(fomMeshPath, polyBasesDir, \
+                                          partInfoDirIt, modesPerTilePod, \
+                                          module.numDofsPerCell)
 
-          totalRomSize, modesPerTileDic = compute_partition_based_poly_bases_to_match_pod(fomMeshPath,\
-                                                                                          polyBasesDir, \
-                                                                                          partInfoDirIt, \
-                                                                                          modesPerTilePod,\
-                                                                                          tag)
-          # -------
-          # loop 4: over all test values
-          # ------
-          run_full_od_galerkin_for_all_test_values(workDir, problem, module, \
-                                                   scenario, fomMeshPath, \
-                                                   partInfoDirIt, polyBasesDir, \
-                                                   energyValue, tag, totalRomSize, \
-                                                   modesPerTileDic, \
-                                                   odRomMeshObj, \
-                                                   nTiles,
-                                                   setId, \
-                                                   False, \
-                                                   "using_poly_bases")
+        polyModesPerTileArr = np.loadtxt(polyBasesDir+"/modes_per_tile.txt", dtype=int)
+        polyModesPerTile = {}
+        if nTiles==1:
+          polyModesPerTile[0] = int(polyModesPerTileArr)
+        else:
+          for i in np.arange(nTiles):
+            polyModesPerTile[i] = int(polyModesPerTileArr[i])
+
+        # -------
+        # loop 4: over all test values
+        # ------
+        run_full_od_galerkin_for_all_test_values(workDir, problem, module, \
+                                                 scenario, fomMeshPath, \
+                                                 partInfoDirIt, polyBasesDir, \
+                                                 energyValue, -1, polyModesPerTile, \
+                                                 odRomMeshObj, nTiles, setId, \
+                                                 "using_poly_bases")
 
 #==============================================================
 # main
@@ -1290,6 +933,7 @@ if __name__ == '__main__':
   if not os.path.exists(workDir):
     print("Working dir {} does not exist, creating it".format(workDir))
     os.system('mkdir -p ' + workDir)
+    print("")
 
   # write scenario id, problem to file
   write_scenario_to_file(scenario, workDir)
@@ -1300,10 +944,10 @@ if __name__ == '__main__':
   print("========================")
   module = importlib.import_module(problem)
 
-  try:    print("{} has dimensionality = {}".format(problem, module.dimensionality))
+  try:    print("{}: dimensionality = {}".format(problem, module.dimensionality))
   except: sys.exit("Missing dimensionality in problem's module")
 
-  try:    print("{} has numDofsPerCell = {}".format(problem, module.numDofsPerCell))
+  try:    print("{}: numDofsPerCell = {}".format(problem, module.numDofsPerCell))
   except: sys.exit("Missing numDofsPerCell in problem's module")
 
   print(module)
@@ -1325,13 +969,13 @@ if __name__ == '__main__':
   fomMeshPath = find_full_mesh_and_ensure_unique(workDir)
 
   print("========================")
-  print("Train runs")
+  print("FOM Train runs")
   print("========================")
   run_foms(workDir, problem, module, scenario, "train", fomMeshPath)
   print("")
 
   print("========================")
-  print("Test runs")
+  print("FOM Test runs")
   print("========================")
   run_foms(workDir, problem, module, scenario, "test", fomMeshPath)
   print("")
@@ -1339,11 +983,10 @@ if __name__ == '__main__':
   print("========================")
   print("Compute partitions")
   print("========================")
-  # loop over all target styles for partitioning:
-  # the simplest and currently only supported is uniform
-  # we can add more. We might add a new partitioning methods
-  # that use FOM train data so the partitioning stage
-  # makes sense to be after the FOM runs
+  # loop over all target styles for creating the tiles:
+  # the simplest and currently only supported is uniform but we can add more.
+  # E.g. might add a new method that use FOM train data so that is also why
+  # the partitioning stage makes sense to be AFTER the FOM train runs are complete
   for partitioningStyleIt in module.odrom_partitioning_style[scenario]:
     if module.dimensionality == 2 and partitioningStyleIt == "uniform":
       make_uniform_partitions_2d(workDir, module, scenario, fomMeshPath)
@@ -1363,74 +1006,59 @@ if __name__ == '__main__':
   make_full_mesh_for_odrom_using_partition_based_indexing(workDir, pdaDir, module, fomMeshPath)
   print("")
 
-
+  print("=====================================")
+  print("Compute partition-based POD")
+  print("=====================================")
   '''
   The pod modes for each tile must be computed in two cases:
-  1. we explicitly want podGalerkin
-  2. if PolyGalerkin is on and the poly_order = -1, -2, in which case
-     we computed the poly order in each tile based on the local pod modes
+  1. if the target scenario explicitly has podGalerkin
+  2. if scenario has PolyGalerkin on and the poly_order = -1
+     because poly_order = -1 indicates that we compute the poly order
+     in each tile such that we match as possible the number of local pod modes
   '''
   mustComputeTiledPodModes = False
   if "PodGalerkinFull" in module.odrom_algos[scenario]:
     mustComputeTiledPodModes = True
-
   if "PolyGalerkinFull" in module.odrom_algos[scenario] and \
-     (-1 in module.odrom_poly_order[scenario] or \
-      -2 in module.odrom_poly_order[scenario]):
+     -1 in module.odrom_poly_order[scenario]:
     mustComputeTiledPodModes = True
 
   if mustComputeTiledPodModes:
-    print("=====================================")
-    print("Compute partition-based POD")
-    print("=====================================")
     for setId, trainIndices in module.odrom_basis_sets[scenario].items():
-      print("")
-      print("------------------------")
       print("Handling setId = {}".format(setId))
       print("------------------------")
       trainDirs = [workDir+'/'+d for d in os.listdir(workDir) \
                    if "train" in d and get_run_id(d) in trainIndices]
       assert(len(trainDirs) == len(trainIndices))
 
-      # if "GalerkinEntropy" in module.odrom_algos[scenario]:
-      #   assert(problem == "2d_rti")
-      #   compute_partition_based_entropy_pod(workDir, setId, trainDirs, module, fomMeshPath)
-      # else:
-      compute_partition_based_pod(workDir, setId, trainDirs, module, fomMeshPath)
-
+      compute_partition_based_state_and_rhs_pod(workDir, setId, trainDirs, module, fomMeshPath)
     print("")
 
-
   print("=====================================")
-  print("Run FULL od-galerkin if needed ")
+  print("Running FULL poly od-galerkin ")
   print("=====================================")
   if "PolyGalerkinFull" in module.odrom_algos[scenario]:
-    # first run the case where each partition has same poly bases,
-    # so make list of all the orders we want that are != -1
-    polyOrders = [i for i in module.odrom_poly_order[scenario] if i > 0]
-    run_od_galerkin_same_poly_bases_in_all_tiles(workDir, problem, module, scenario, \
-                                                 fomMeshPath, polyOrders)
 
     # check if -1 is is part of the order list, and if so that means
     # we need to use polyn bases such that in each tile we decide the order
     # based on the number of POD modes to have a fair comparison
     if -1 in module.odrom_poly_order[scenario]:
-      run_od_galerkin_poly_bases_variable_order_per_tile(workDir, problem, module, \
-                                                         scenario, \
-                                                         fomMeshPath,
-                                                         -1)
-    if -2 in module.odrom_poly_order[scenario]:
-      run_od_galerkin_poly_bases_variable_order_per_tile(workDir, problem, module, \
-                                                         scenario, \
-                                                         fomMeshPath,
-                                                         -2)
+      run_od_poly_galerkin_find_order_matching_pod_modes_count(workDir, \
+                                                               problem, module, \
+                                                               scenario, \
+                                                               fomMeshPath)
 
+    # run the case involving each partition of same poly bases,
+    # so we need to list all the orders we want that are != -1
+    polyOrders = [i for i in module.odrom_poly_order[scenario] if i > 0]
+    if polyOrders:
+      run_od_galerkin_same_poly_bases_in_all_tiles(workDir, problem, module, \
+                                                   scenario, fomMeshPath, polyOrders)
 
+  print("=====================================")
+  print("Running FULL pod od-galerkin ")
+  print("=====================================")
   if "PodGalerkinFull" in module.odrom_algos[scenario]:
     run_full_od_galerkin_pod_bases(workDir, problem, module, scenario, fomMeshPath)
 
-  # elif "GalerkinEntropy" in module.odrom_algos[scenario]:
-  #   run_full_od_galerkin(workDir, problem, module, scenario, fomMeshPath, useEntropy=True)
-  # else:
-  #   sys.exit()
   print("")

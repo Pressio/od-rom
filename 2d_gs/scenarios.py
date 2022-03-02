@@ -10,6 +10,7 @@ leverage_scores_betas = {}
 odrom_energies        = {}
 odrom_basis_sets      = {}
 odrom_algos           = {}
+odrom_poly_order      = {}
 
 '''
 A decomposition is defined by two things:
@@ -74,11 +75,15 @@ test_points[1]  = {
   4: 0.068
 }
 
-odrom_algos[1]        = ["GalerkinFull"]
+odrom_algos[1]        = ["GalerkinFull", "PolyGalerkinFull"]
 odrom_energies[1]     = [99.9999, 99.999995, 99.99999999]
 odrom_basis_sets[1]   = {
   0: [0,1,2]
 }
+
+# -1: compute orders of the poly bases to match pod modes and truncate to have a full poly order
+# int>0: we use same poly order in each tile
+odrom_poly_order[1]   = [-1]#, 1, 2, 4, 6]
 
 odrom_partitioning_topol[1] = [[1,1], [5,5], [10,10], [20,20]]
 odrom_partitioning_style[1] = ['uniform']
@@ -129,13 +134,17 @@ test_points[2]  = {
   3: 0.025
 }
 
-odrom_algos[2]        = ["PodGalerkinFull"]
-odrom_energies[2]     = [99.9999, 99.999995, 99.99999999]
+odrom_algos[2]        = ["PodGalerkinFull", "PolyGalerkinFull"]
+odrom_energies[2]     = [99.9999, 99.999995, 99.99999999, 100.0]
 odrom_basis_sets[2]   = {
   0: [0,1,2]
 }
 
-odrom_partitioning_topol[2] = [[1,1], [5,5], [10,10], [20,20]]
+# -1: compute orders of the poly bases to match pod modes and truncate to have a full poly order
+# int>0: we use same poly order in each tile
+odrom_poly_order[2]   = [-1]#, 1, 2, 4, 6]
+
+odrom_partitioning_topol[2] = [[1,1]]#, [5,5], [10,10], [20,20]]
 odrom_partitioning_style[2] = ['uniform']
 
 

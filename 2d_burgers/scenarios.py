@@ -60,75 +60,17 @@ test_points[1]  = {
 }
 
 odrom_algos[1]        = ["PodGalerkinFull", "PolyGalerkinFull"]
-odrom_energies[1]     = [99.99] #, 99.999], 99.9999, 99.99999]
+odrom_energies[1]     = [99.99, 99.999]#, 99.9999, 99.99999]
 odrom_basis_sets[1]   = {
   0: [0,1]
 }
 
-# -2: compute orders of the poly bases to match pod modes and truncate to have a full poly order
-# -1: compute orders of the poly bases to match pod modes and truncate exactly to match
+# -1: compute orders of the poly bases to match pod modes and truncate to have a full poly order
 # int>0: we use same poly order in each tile
-odrom_poly_order[1]   = [-1, -2, 1, 2, 3, 5, 6, 8]
+odrom_poly_order[1]   = [-1]
 
-odrom_partitioning_topol[1] = [[5,5], [16,16]]
+odrom_partitioning_topol[1] = [[3,3], [8,8], [16,16]]
 odrom_partitioning_style[1] = ['uniform']
-
-
-# ----------------------------------------------------
-
-
-base_dic[2] = {
-  'general' : {
-    'problem': "2d_burgers",
-    'meshDir': "tbd"
-  },
-
-  'fom' : {
-    'finalTimeTrain': 5.,
-    'finalTimeTest' : 8.,
-    'inviscidFluxReconstruction' : "Weno5",
-    'odeScheme': "RK4",
-    'dt' : 0.005,
-    'stateSamplingFreq' : 5,
-    'velocitySamplingFreq' : 100
-  },
-
-  'odrom' : {
-    'finalTime': 8.,
-    'inviscidFluxReconstruction' : "Weno5",
-    'odeScheme': "RK4",
-    'dt' : 0.025,
-    'stateSamplingFreq' : 5
-  },
-
-  'physicalCoefficients' : {
-    'pulsemag'    : "tbd",
-    'pulsespread' : "tbd",
-    'diffusion'   : 0.0001,
-    "pulsecenter" : [-0.2, -0.2]
-  }
-}
-
-train_points[2] = {
-  0: [0.2, 0.5],
-  1: [0.5, 0.5],
-  2: [0.2, 1.],
-  3: [0.5, 1.],
-}
-
-test_points[2]  = {
-  0: [0.3, 0.8],
-  1: [0.6, 1.1]
-}
-
-odrom_algos[2]        = ["GalerkinFull"]
-odrom_energies[2]     = [99.99999, 99.99999]
-odrom_basis_sets[2]   = {
-  0: [0,1]
-}
-
-odrom_partitioning_topol[2] = [[1,1], [4,4], [10,10]]
-odrom_partitioning_style[2] = ['uniform']
 
 
 '''

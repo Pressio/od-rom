@@ -2,6 +2,7 @@
 import numpy as np
 from myio import write_matrix_to_bin
 
+# -------------------------------------------------------------------
 class FomObserver:
   def __init__(self, N, sf, vf, numSteps):
     self.f_     = [int(sf), int(vf)]
@@ -25,3 +26,23 @@ class FomObserver:
     # note that we don't need to tranpose here before writing and don't write shape
     write_matrix_to_bin(outDir+"/fom_snaps_state", self.sM_, False, False)
     write_matrix_to_bin(outDir+"/fom_snaps_rhs",   self.vM_, False, False)
+
+# -------------------------------------------------------------------
+class RomObserver:
+  def __init__(self, sf, numSteps, modesPerTile):
+    self.f_     = int(sf)
+    self.count_ = int(0)
+
+    totNumModes = np.sum(list(modesPerTile.values()))
+    totalStateSnaps = int(numSteps/sf)
+    self.sM_ = np.zeros((totalStateSnaps, totNumModes), order='F')
+
+  def __call__(self, step, romState):
+    if step % self.f_ == 0:
+      self.sM_[self.count_, :] = np.copy(romState)
+      self.count_ += 1
+
+  def write(self, outDir):
+    # note that final False, Flase is to indicate
+    # we don't need to transpose here before writing and don't write shape
+    write_matrix_to_bin(outDir+"/rom_snaps_state", self.sM_, False, False)
