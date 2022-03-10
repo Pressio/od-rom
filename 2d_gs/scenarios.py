@@ -7,6 +7,9 @@ test_points           = {}
 sample_mesh_fractions = {}
 leverage_scores_betas = {}
 
+# True/False to set initial condition as ref state
+odrom_use_ic_reference_state = {}
+
 odrom_energies        = {}
 odrom_basis_sets      = {}
 odrom_algos           = {}
@@ -75,6 +78,8 @@ test_points[1]  = {
   4: 0.068
 }
 
+odrom_use_ic_reference_state[1] = False
+
 odrom_algos[1]        = ["GalerkinFull", "PolyGalerkinFull"]
 odrom_energies[1]     = [99.9999, 99.999995, 99.99999999]
 odrom_basis_sets[1]   = {
@@ -108,7 +113,7 @@ base_dic[2] = {
 
   'odrom' : {
     'finalTime': 1000.0,
-    'odeScheme': "RK4",
+    'odeScheme': "RK2",
     'dt' : 0.4,
     'stateSamplingFreq' : 4
   },
@@ -129,13 +134,15 @@ train_points[2] = {
 
 test_points[2]  = {
   0: 0.04,
-  1: 0.06,
-  2: 0.075,
-  3: 0.025
+  #1: 0.06,
+  #2: 0.075,
+  #3: 0.025
 }
 
+odrom_use_ic_reference_state[2] = True
+
 odrom_algos[2]        = ["PodGalerkinFull", "PolyGalerkinFull"]
-odrom_energies[2]     = [99.9999, 99.999995, 99.99999999, 100.0]
+odrom_energies[2]     = [99.999995] #, 99.99999999, 100.0]
 odrom_basis_sets[2]   = {
   0: [0,1,2]
 }
@@ -144,11 +151,5 @@ odrom_basis_sets[2]   = {
 # int>0: we use same poly order in each tile
 odrom_poly_order[2]   = [-1]#, 1, 2, 4, 6]
 
-odrom_partitioning_topol[2] = [[1,1]]#, [5,5], [10,10], [20,20]]
+odrom_partitioning_topol[2] = [[20,20]]#, [5,5], [10,10], [20,20]]
 odrom_partitioning_style[2] = ['uniform']
-
-
-'''
-male list of valid scenarios, figure out from keys in dic
-'''
-valid_scenarios_ids = list(base_dic.keys())

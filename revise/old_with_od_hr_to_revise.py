@@ -311,7 +311,6 @@ def compute_sample_mesh(workDir, pdaDir, fullMeshPath, partitions,
         stencilGids = np.loadtxt(outDir+"/sm/stencil_mesh_gids.dat", dtype=int)
         for tileId in range(nTilesX*nTilesY):
           myCellGids   = np.loadtxt(currPartInfoDir + "/cell_gids_wrt_full_mesh_p_"+str(tileId)+".txt",dtype=int)
-
           commonElem = set(stencilGids).intersection(myCellGids)
           commonElem = np.sort(list(commonElem))
           np.savetxt(outDir+'/stencil_mesh_gids_p_'+str(tileId)+'.dat', commonElem, fmt='%8i')

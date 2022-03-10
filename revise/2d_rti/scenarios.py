@@ -7,6 +7,9 @@ test_points           = {}
 sample_mesh_fractions = {}
 leverage_scores_betas = {}
 
+# True/False to set initial condition as ref state
+odrom_use_ic_reference_state = {}
+
 odrom_energies        = {}
 odrom_basis_sets      = {}
 odrom_algos           = {}
@@ -67,6 +70,8 @@ train_points[1] = {
 test_points[1]  = {
   0: 0.030,
 }
+
+odrom_use_ic_reference_state[1] = False
 
 odrom_algos[1]        = ["PodGalerkinFull"]
 odrom_energies[1]     = [99.99999]

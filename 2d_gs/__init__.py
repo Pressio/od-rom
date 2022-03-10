@@ -1,9 +1,9 @@
 
-dimensionality = 2
-numDofsPerCell = 2
-
 import pressiodemoapps as pda
 from .scenarios import *
+
+dimensionality = 2
+numDofsPerCell = 2
 
 # -------------------------------------------------------------------
 def create_problem_for_scenario(scenario, meshObj, coeffDic, dicIn, val):
@@ -25,13 +25,13 @@ def create_problem_for_scenario(scenario, meshObj, coeffDic, dicIn, val):
   dicIn['feedRate']   = feedRate
   dicIn['killRate']   = killRate
   scheme = pda.ViscousFluxReconstruction.FirstOrder
-  appObj = pda.create_problem(meshObj, probId, scheme, \
-                              diff_A, diff_B, \
-                              feedRate, killRate)
+  appObj = pda.create_gray_scott_2d_problem(meshObj, scheme, \
+                                            diff_A, diff_B, \
+                                            feedRate, killRate)
   return appObj
 
 # -------------------------------------------------------------------
-def tuple_args_for_fom_mesh_generation(scenario):
+def custom_tuple_args_for_fom_mesh_generation(scenario):
   mypart = ("--bounds", str(-1.25), str(1.25), str(-1.25), str(1.25), \
             "--periodic", "x", "y")
   return mypart

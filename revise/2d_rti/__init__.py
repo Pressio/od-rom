@@ -1,9 +1,9 @@
 
-dimensionality = 2
-numDofsPerCell = 4
-
 import pressiodemoapps as pda
 from .scenarios import *
+
+dimensionality = 2
+numDofsPerCell = 4
 
 # -------------------------------------------------------------------
 def inviscid_flux_string_to_stencil_size(stringIn):
@@ -44,7 +44,7 @@ def create_problem_for_scenario(scenario, meshObj, coeffDic, dicIn, val):
   appObj  = pda.create_problem(meshObj, probId, schemeEnu, amplitude)
 
 # -------------------------------------------------------------------
-def tuple_args_for_fom_mesh_generation(scenario):
+def custom_tuple_args_for_fom_mesh_generation(scenario):
   schemeString = base_dic[scenario]['fom']['inviscidFluxReconstruction']
   stencilSize  = inviscid_flux_string_to_stencil_size(schemeString)
   mypart = ("--bounds", str(0.0), str(0.25), str(0.0), str(1.0), \

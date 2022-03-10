@@ -26,7 +26,7 @@ def _ij_from_gid(gid):
   i = gid % nx
   return int(i), int(j)
 
-def _mapCellGidsToStateDofsGids(cellGidsDic, nx, ny, numDofsPerCell):
+def _mapCellGidsToStateDofsGids(cellGidsDic, numDofsPerCell):
   d = {}
 
   if numDofsPerCell == 1:
@@ -85,6 +85,23 @@ def _mapCellGidsToPieces(numCellsPerBlockX, numCellsPerBlockY, npX, npY, nx, ny)
         d[blockGid] = [cellGid]
   return d
 
+def _create1d_new(totCellsX, xSplits, ndpc):
+  blockSizes = {}
+  d = {}
+  blockGid = 0
+  for xgids in xSplits:
+    for i in xgids:
+      cellGid  = i
+      if blockGid in d:
+        d[blockGid].append(cellGid)
+      else:
+        d[blockGid] = [cellGid]
+    blockSizes[blockGid] = [len(xgids)]
+    blockGid += 1
+
+  stateDofsGidsDic = _mapCellGidsToStateDofsGids(d, ndpc)
+  return [blockSizes, d, stateDofsGidsDic]
+
 def _create2d_new(totCellsX, totCellsY, xSplits, ySplits, ndpc):
   blockSizes = {}
   d = {}
@@ -101,7 +118,7 @@ def _create2d_new(totCellsX, totCellsY, xSplits, ySplits, ndpc):
       blockSizes[blockGid] = [len(xgids), len(ygids)]
       blockGid += 1
 
-  stateDofsGidsDic = _mapCellGidsToStateDofsGids(d, totCellsX, totCellsY, ndpc)
+  stateDofsGidsDic = _mapCellGidsToStateDofsGids(d, ndpc)
   return [blockSizes, d, stateDofsGidsDic]
 
 
@@ -116,7 +133,8 @@ if __name__ == '__main__':
   parser.add_argument("--meshPath",
                       dest="meshPath", \
                       required=True)
-  parser.add_argument("--tiles", nargs=2,
+  parser.add_argument("--tiles",
+                      nargs='+',
                       dest="tiles",
                       type=int,
                       required=True)
@@ -134,7 +152,37 @@ if __name__ == '__main__':
     os.system('mkdir -p ' + workDir)
 
   meshDim = find_dimensionality_from_info_file(meshPath)
-  if meshDim == 2:
+
+  # ----------------------
+  if meshDim == 1:
+  # ----------------------
+    assert(len(args.tiles)==1)
+    nx = find_num_cells_from_info_file(meshPath, "nx")
+    nTilesX = args.tiles[0]
+    totTiles = nTilesX
+    xSplits = np.array_split(np.arange(nx), nTilesX)
+
+    blockSizes, cellGidsDic, stateDofsGidsDic = _create1d_new(nx, xSplits, ndpc)
+
+    np.savetxt(workDir+"/topo.txt", \
+               np.array([nTilesX, 1]), fmt='%8d')
+
+    for k in range(totTiles):
+      np.savetxt(workDir+"/block_size_p_"+str(k)+".txt", \
+                 np.array(blockSizes[k]), fmt='%8d')
+
+    for k,v in cellGidsDic.items():
+      np.savetxt(workDir+"/cell_gids_wrt_full_mesh_p_"+str(k)+".txt", \
+                 np.array(v), fmt='%8d')
+
+    for k,v in stateDofsGidsDic.items():
+      np.savetxt(workDir+"/state_vec_rows_wrt_full_mesh_p_"+str(k)+".txt", \
+                 np.array(v), fmt='%8d')
+
+  # ----------------------
+  elif meshDim == 2:
+  # ----------------------
+    assert(len(args.tiles)==2)
     nx = find_num_cells_from_info_file(meshPath, "nx")
     ny = find_num_cells_from_info_file(meshPath, "ny")
 

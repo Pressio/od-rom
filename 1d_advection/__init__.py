@@ -2,7 +2,7 @@
 import pressiodemoapps as pda
 from .scenarios import *
 
-dimensionality = 2
+dimensionality = 1
 numDofsPerCell = 1
 
 # -------------------------------------------------------------------
@@ -32,24 +32,15 @@ def inviscid_flux_string_to_enum(stringIn):
 def create_problem_for_scenario(scenario, meshObj, coeffDic, dicIn, val):
   schemeStr   = dicIn['inviscidFluxReconstruction']
   schemeEnu   = inviscid_flux_string_to_enum(schemeStr)
-  pulsemag    = coeffDic['pulsemag']
-  pulsespread = coeffDic['pulsespread']
-  diffusion   = coeffDic['diffusion']
-  pulsecenter = coeffDic['pulsecenter']
+  velocity    = coeffDic['velocity']
 
   if scenario == 1:
-    pulsespread = val
+    velocity = val
   else:
-    sys.exit("invalid scenario {} for 2d_burgers".format(scenario))
+    sys.exit("invalid scenario {} for 1d_advection".format(scenario))
 
-  dicIn['pulsemag']    = pulsemag
-  dicIn['pulsespread'] = pulsespread
-  dicIn['diffusion']   = diffusion
-  dicIn['pulsecenter'] = pulsecenter
-  appObj = pda.create_burgers_2d_problem(meshObj, schemeEnu, \
-                                         pda.ViscousFluxReconstruction.FirstOrder,
-                                         pulsemag, pulsespread, diffusion, \
-                                         pulsecenter[0], pulsecenter[1])
+  dicIn['velicity']    = velocity
+  appObj = pda.create_linear_advection_1d_problem(meshObj, schemeEnu, velocity)
 
   return appObj
 
@@ -57,8 +48,8 @@ def create_problem_for_scenario(scenario, meshObj, coeffDic, dicIn, val):
 def custom_tuple_args_for_fom_mesh_generation(scenario):
   schemeString  = base_dic[scenario]['fom']['inviscidFluxReconstruction']
   stencilSize   = inviscid_flux_string_to_stencil_size(schemeString)
-  mypart = ("--bounds", str(-1.0), str(1.0), str(-1.0), str(1.0), \
+  mypart = ("--bounds", str(-1.0), str(15.0),
             "-s", str(stencilSize), \
-            "--periodic", "x", "y")
+            "--periodic", "x")
 
   return mypart

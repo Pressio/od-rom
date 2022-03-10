@@ -9,6 +9,47 @@ def mapToReferenceRange(x):
   return 2. * (x - xmid) / (xmax - xmin)
 
 # -------------------------------------------------------------------
+class LegendreBases1d:
+  def __init__(self, policy):
+    self.policy_ = policy
+    assert(policy in ["maxOrder", "totalOrder"])
+
+  def totalBasesCount(self, order):
+    if self.policy_ == "maxOrder":
+      return (order+1)
+    elif self.policy_ == "totalOrder":
+      return order+1
+
+  def findClosestOrderToMatchTargetBasesCount(self, count):
+    if self.policy_ == "maxOrder":
+      return count-1
+    elif self.policy_ == "totalOrder":
+      return count-1
+
+  def __call__(self, order, x):
+    x = np.array(x)
+    N = len(x)
+    x = mapToReferenceRange(x)
+
+    Poly = []
+    for p in range(order+1):
+      Poly.append(legendre(p))
+
+    if self.policy_ == "maxOrder":
+      N_basis = self.totalBasesCount(order)
+      M = np.zeros((N, N_basis), order='F')
+      for px in range(order+1):
+        M[:,px] = Poly[px](x)
+      return M
+
+    elif self.policy_ == "totalOrder":
+      N_basis = self.totalBasesCount(order)
+      M = np.zeros((N,N_basis), order='F')
+      for px in range(order+1):
+        M[:,px] = Poly[px](x)
+      return M
+
+# -------------------------------------------------------------------
 class LegendreBases2d:
   def __init__(self, policy):
     self.policy_ = policy
@@ -22,7 +63,7 @@ class LegendreBases2d:
 
   def findClosestOrderToMatchTargetBasesCount(self, count):
     if self.policy_ == "maxOrder":
-      return np.ceil(np.sqrt(targetCount))-1
+      return np.ceil(np.sqrt(count))-1
     elif self.policy_ == "totalOrder":
       return int((-3 + np.sqrt(9. + 4.*count*2))/2)
 

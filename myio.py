@@ -26,14 +26,8 @@ def read_problem_name_from_dir(dirFrom):
   return data[0]
 
 # -------------------------------------------------------------------
-def write_matrix_to_bin(fileName, M, writeShape, transposeBeforeWriting):
+def write_matrix_to_bin_omit_shape(fileName, M, transposeBeforeWriting):
   fileo = open(fileName, "wb")
-  # write to beginning of file the extents of the matrix
-  if writeShape:
-    r=np.int64(M.shape[0])
-    np.array([r]).tofile(fileo)
-    c=np.int64(M.shape[1])
-    np.array([c]).tofile(fileo)
   if transposeBeforeWriting:
     MT = np.transpose(M)
     MT.tofile(fileo)
@@ -56,14 +50,23 @@ def load_basis_from_binary_file(lsvFile):
   return M
 
 # -------------------------------------------------------------------
-def load_fom_state_snapshot_matrix(dataDirs, numTotDofs, numDofsPerCell):
-  M = np.zeros((0, numTotDofs))
+def load_fom_state_snapshot_matrix(dataDirs, fomTotDofs, \
+                                   numDofsPerCell, \
+                                   subtractInitialCondition):
+  M = np.zeros((0, fomTotDofs))
   for targetDirec in dataDirs:
     print("reading data from {}".format(targetDirec))
 
     data = np.fromfile(targetDirec+"/fom_snaps_state")
-    numTimeSteps = int(np.size(data)/numTotDofs)
-    D = np.reshape(data, (numTimeSteps, numTotDofs))
+
+    numTimeSteps = int(np.size(data)/fomTotDofs)
+    D  = np.reshape(data, (numTimeSteps, fomTotDofs))
+    if subtractInitialCondition:
+      print("subtracting initial state")
+      IC = np.loadtxt(targetDirec+"/initial_state.txt")
+      for i in range(D.shape[0]):
+        D[i,:] = D[i,:] - IC
+
     M = np.append(M, D, axis=0)
 
   print("state snapshots: shape  : ", M.T.shape)
@@ -71,14 +74,14 @@ def load_fom_state_snapshot_matrix(dataDirs, numTotDofs, numDofsPerCell):
   return M.T
 
 # -------------------------------------------------------------------
-def load_fom_rhs_snapshot_matrix(dataDirs, numTotDofs, numDofsPerCell):
-  M = np.zeros((0, numTotDofs))
+def load_fom_rhs_snapshot_matrix(dataDirs, fomTotDofs, numDofsPerCell):
+  M = np.zeros((0, fomTotDofs))
   for targetDirec in dataDirs:
     print("reading data from {}".format(targetDirec))
 
     data = np.fromfile(targetDirec+"/fom_snaps_rhs")
-    numTimeSteps = int(np.size(data)/numTotDofs)
-    D = np.reshape(data, (numTimeSteps, numTotDofs))
+    numTimeSteps = int(np.size(data)/fomTotDofs)
+    D = np.reshape(data, (numTimeSteps, fomTotDofs))
     M = np.append(M, D, axis=0)
 
   print("rhs snapshots: shape    : ", M.T.shape)
