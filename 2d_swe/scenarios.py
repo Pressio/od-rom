@@ -28,33 +28,55 @@ odrom_partitioning_style = {}
 
 odrom_energies        = {}
 odrom_basis_sets      = {}
+
+'''
+Example to specify sample meshes:
+odrom_sample_meshes[1] = [["random", 0.25], \
+                          ["psampling", 0.25, 0]]
+
+for random: [string, fraction]
+for psampling: [string, fraction, int of dof to use to compute sm]
+'''
 odrom_sample_meshes   = {}
+
+'''
+odrom_poly_order
+
+Example: odrom_poly_order[1] = [-1, 1, 4, 6]
+
+where:
+# -1: compute orders of the poly bases to match pod modes
+#     and truncate to have a full poly order
+# int>0: we use same poly order in each tile
+'''
 odrom_poly_order      = {}
+
 
 ################################
 
+
 base_dic[1] = {
   'general' : {
-    'problem': "2d_swe",
-    'meshDir': "tbd"
+    'problem' : "2d_swe"
   },
 
   'fom' : {
-    'finalTimeTrain': 5.0,
-    'finalTimeTest' : 6.0,
+    'meshSize': [200, 200],
+    'finalTimeTrain': 6.0,
+    'finalTimeTest' : 8.0,
     'inviscidFluxReconstruction' : "Weno5",
     'odeScheme': "RK4",
     'dt' : 0.005,
-    'stateSamplingFreq' : 2,
-    'velocitySamplingFreq' : 2
+    'stateSamplingFreq' : 4,
+    'velocitySamplingFreq' : 4
   },
 
   'odrom' : {
-    'finalTime': 6.0,
+    'finalTime': 8.0,
     'inviscidFluxReconstruction' : "Weno5",
     'odeScheme': "RK4",
-    'dt' : 0.025,
-    'stateSamplingFreq' : 1
+    'dt' : 0.010,
+    'stateSamplingFreq' : 4
   },
 
   'physicalCoefficients' : {
@@ -70,23 +92,19 @@ train_points[1] = {
 }
 
 test_points[1]  = {
-  0: -2.0,
   1: -1.25
 }
 
 odrom_use_ic_reference_state[1] = True
 
-odrom_algos[1]      = ["PodGalerkinGappy"]
+odrom_algos[1]      = ["PodGalerkinFull", "PodGalerkinGappy"]
 
-odrom_partitioning_topol[1] = [[10,10]]
+odrom_partitioning_topol[1] = [[1,1], [4,4], [5,5]]
 odrom_partitioning_style[1] = ['uniform']
 
-odrom_energies[1]   = [99.999, 99.999999, 99.9999999]
+odrom_energies[1]   = [99.9999, 99.999999]
 odrom_basis_sets[1] = { 0: [0,1] }
 
-odrom_sample_meshes[1] = [["psampling", 0.1], ["psampling", 0.2]]
-
-# -1: compute orders of the poly bases to match pod modes
-#     and truncate to have a full poly order
-# int>0: we use same poly order in each tile
-odrom_poly_order[1]   = [-1]#, 1, 2, 4, 6]
+# for psampling: [string, fraction, int of dof to use to compute sm]
+odrom_sample_meshes[1] = [["psampling", 0.25, 0],
+                          ["psampling", 0.15, 0]]

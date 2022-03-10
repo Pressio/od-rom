@@ -4,33 +4,17 @@ base_dic              = {}
 train_points          = {}
 test_points           = {}
 
-sample_mesh_fractions = {}
-leverage_scores_betas = {}
-
 # True/False to set initial condition as ref state
 odrom_use_ic_reference_state = {}
 
-odrom_energies        = {}
-odrom_basis_sets      = {}
 odrom_algos           = {}
-odrom_poly_order      = {}
-
-'''
-A decomposition is defined by two things:
-a. topology: how many pieces
-b. style   : how the pieces are computed
-so we need to provide two things
-to specify a decomposition.
-
-For a., we can do:
-in 2d we can have [[2,2], [2,3]]
-
-For b. choices are:
-1. uniform: self-explanatory
-2. add more
-'''
 odrom_partitioning_topol = {}
 odrom_partitioning_style = {}
+
+odrom_energies        = {}
+odrom_basis_sets      = {}
+odrom_sample_meshes   = {}
+odrom_poly_order      = {}
 
 ################################
 
@@ -99,21 +83,21 @@ odrom_partitioning_style[1] = ['uniform']
 base_dic[2] = {
   'general' : {
     'problem': "2d_gs",
-    'meshDir': "tbd"
   },
 
   'fom' : {
+    'meshSize': [200, 200],
     'finalTimeTrain': 1000.,
     'finalTimeTest' : 1000.,
     'odeScheme': "RK4",
     'dt' : 0.2,
     'stateSamplingFreq' : 4,
-    'velocitySamplingFreq' : 100
+    'velocitySamplingFreq' : 4
   },
 
   'odrom' : {
     'finalTime': 1000.0,
-    'odeScheme': "RK2",
+    'odeScheme': "RK4",
     'dt' : 0.4,
     'stateSamplingFreq' : 4
   },
@@ -141,15 +125,11 @@ test_points[2]  = {
 
 odrom_use_ic_reference_state[2] = True
 
-odrom_algos[2]        = ["PodGalerkinFull", "PolyGalerkinFull"]
-odrom_energies[2]     = [99.999995] #, 99.99999999, 100.0]
-odrom_basis_sets[2]   = {
-  0: [0,1,2]
-}
+odrom_algos[2]        = ["PodGalerkinGappy"]
+odrom_energies[2]     = [99.999999999]
+odrom_basis_sets[2]   = { 0: [0,1,2] }
 
-# -1: compute orders of the poly bases to match pod modes and truncate to have a full poly order
-# int>0: we use same poly order in each tile
-odrom_poly_order[2]   = [-1]#, 1, 2, 4, 6]
-
-odrom_partitioning_topol[2] = [[20,20]]#, [5,5], [10,10], [20,20]]
+odrom_partitioning_topol[2] = [[10,10]]
 odrom_partitioning_style[2] = ['uniform']
+
+odrom_sample_meshes[2] = [["psampling", 0.05, 0]]

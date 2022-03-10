@@ -4,6 +4,15 @@ from scipy import linalg
 from myio import load_basis_from_binary_file
 import time, math
 
+
+def checknan_and_print_step_status_if_needed(step, nSteps, romState):
+  if step % 10 == 0:
+    stateNorm =linalg.norm(romState, check_finite=False)
+    print("step {:>6} of {:>6}, romStateNorm = {:>20}".format(step, nSteps, stateNorm))
+    if math.isnan(stateNorm):
+      return True
+    return False
+
 # --------------------------------
 # RK2
 # --------------------------------
@@ -17,10 +26,8 @@ def odrom_rk2(odProblem, yhat, nSteps, dt, observer=None):
 
   time = 0.
   for step in range(1, nSteps+1):
-    if step % 10 == 0:
-      stateNorm = linalg.norm(yhat, check_finite=False)
-      print("step {} of {}, romStateNorm = {}".format(step, nSteps, stateNorm))
-      if math.isnan(stateNorm): break
+    if checknan_and_print_step_status_if_needed(step, nSteps, yhat):
+      break
 
     if observer!= None:
       observer(step-1, yhat)
@@ -59,10 +66,8 @@ def odrom_rk4(odProblem, yhat, nSteps, dt, observer=None):
 
   time = 0.
   for step in range(1, nSteps+1):
-    if step % 10 == 0:
-      stateNorm =linalg.norm(yhat, check_finite=False)
-      print("step {} of {}, romStateNorm = {}".format(step, nSteps, stateNorm))
-      if math.isnan(stateNorm): break
+    if checknan_and_print_step_status_if_needed(step, nSteps, yhat):
+      break
 
     if observer!= None:
       observer(step-1, yhat)
@@ -114,10 +119,8 @@ def odrom_ssprk3(odProblem, yhat, nSteps, dt, observer=None):
 
   time = 0.
   for step in range(1, nSteps+1):
-    if step % 10 == 0:
-      stateNorm =linalg.norm(yhat, check_finite=False)
-      print("step {} of {}, romStateNorm = {}".format(step, nSteps, stateNorm))
-      if math.isnan(stateNorm): break
+    if checknan_and_print_step_status_if_needed(step, nSteps, yhat):
+      break
 
     if observer!= None:
       observer(step-1, yhat)
