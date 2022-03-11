@@ -1616,7 +1616,7 @@ def run_od_pod_galerkin_quad(workDir, problem, module, \
     # -------
     # loop 2: over all POD computed from various sets of train runs
     # ------
-    for setId, trainIndices in module.odrom_basis_sets[scenario].items():
+    for setId, trainIndices in module.basis_sets[scenario].items():
       currStatePodDir = path_to_state_pod_data_dir(workDir, partitionStringIdentifier, setId)
 
       # find all train dirs for current setId
@@ -1633,10 +1633,7 @@ def run_od_pod_galerkin_quad(workDir, problem, module, \
         # -------
         # loop 4: over all samples meshes
         # ------
-        sampleMeshesDirs = [workDir+'/'+d for d in os.listdir(workDir) \
-                            if "sample_mesh_random" in d or \
-                            "sample_mesh_psampling" in d]
-        for sampleMeshDirIt in sampleMeshesDirs:
+        for sampleMeshDirIt in find_all_sample_meshes_for_target_partition_info(workDir, partInfoDirIt):
           smKeyword = string_identifier_from_sample_mesh_dir(sampleMeshDirIt)
 
           # compute projector for each tile if needed
@@ -2447,7 +2444,8 @@ if __name__ == '__main__':
   '''
   then handle the case for the overdecomposed
   '''
-  if "PodOdGalerkinGappy" in module.algos[scenario]:
+  if "PodOdGalerkinGappy" in module.algos[scenario] or \
+     "PodOdGalerkinQuad" in module.algos[scenario]:
     sampleMeshesList = module.sample_meshes[scenario]
     if any(["random" in it for it in sampleMeshesList]):
       compute_sample_mesh_random_od(workDir, module, scenario, pdaDir, fomMeshPath)
@@ -2477,25 +2475,20 @@ if __name__ == '__main__':
     run_od_pod_galerkin_gappy(workDir, problem, module, scenario, fomMeshPath)
   print("")
 
-  sys.exit()
+  # print("=================================================")
+  # print("Running Quad pod od-galerkin ")
+  # print("=================================================")
+  # if "PodOdGalerkinQuad" in module.algos[scenario]:
+  #   run_od_pod_galerkin_quad(workDir, problem, module, scenario, fomMeshPath)
+  # print("")
+
   # print("=================================================")
   # print("Running Masked Gappy pod od-galerkin ")
   # print("=================================================")
   # if "PodGalerkinGappyMasked" in module.algos[scenario]:
   #   run_od_pod_masked_galerkin_gappy(workDir, problem, module, scenario, fomMeshPath)
   # print("")
-
-  # print("=================================================")
-  # print("Running Quad pod od-galerkin ")
-  # print("=================================================")
-  # if "PodGalerkinQuad" in module.algos[scenario]:
-  #   run_od_pod_galerkin_quad(workDir, problem, module, scenario, fomMeshPath)
-  # print("")
-
   sys.exit()
-
-
-
 
 
   print("=================================================")
