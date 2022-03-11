@@ -27,6 +27,7 @@ from odrom_full import *
 from odrom_gappy import *
 from odrom_masked_gappy import *
 from odrom_time_integrators import *
+from standardrom_full import *
 
 #==============================================================
 # functions
@@ -129,8 +130,20 @@ def path_to_state_pod_data_dir(workDir, partitioningKeyword, setId):
   return s1 + "_" + s2
 
 # -------------------------------------------------------------------
+def path_to_full_domain_state_pod_data_dir(workDir, setId):
+  s1 = workDir + "/full_domain"
+  s2 = "full_state_pod_set_"+str(setId)
+  return s1 + "_" + s2
+
+# -------------------------------------------------------------------
 def path_to_rhs_pod_data_dir(workDir, partitioningKeyword, setId):
   s1 = "/partition_based_"+partitioningKeyword
+  s2 = "full_rhs_pod_set_"+str(setId)
+  return workDir + s1 + "_" + s2
+
+# -------------------------------------------------------------------
+def path_to_full_domain_rhs_pod_data_dir(workDir, setId):
+  s1 = "/full_domain"
   s2 = "full_rhs_pod_set_"+str(setId)
   return workDir + s1 + "_" + s2
 
@@ -153,8 +166,21 @@ def path_to_od_sample_mesh_random(workDir, partitioningKeyword, fraction):
   return s1 + "_" + s2
 
 # -------------------------------------------------------------------
+def path_to_full_domain_sample_mesh_random(workDir, fraction):
+  s1 = workDir + "/full_domain"
+  s2 = "sample_mesh_random_{:3.3f}".format(fraction)
+  return s1 + "_" + s2
+
+# -------------------------------------------------------------------
 def path_to_od_sample_mesh_psampling(workDir, partitioningKeyword, setId, fraction):
   s1 = workDir + "/partition_based_"+partitioningKeyword
+  s2 = "sample_mesh_psampling_set_"+str(setId)
+  s3 = "fraction_{:3.3f}".format(fraction)
+  return s1 + "_" + s2 + "_" + s3
+
+# -------------------------------------------------------------------
+def path_to_full_domain_sample_mesh_psampling(workDir, setId, fraction):
+  s1 = workDir + "/full_domain"
   s2 = "sample_mesh_psampling_set_"+str(setId)
   s3 = "fraction_{:3.3f}".format(fraction)
   return s1 + "_" + s2 + "_" + s3
@@ -348,7 +374,7 @@ def make_uniform_partitions_1d(workDir, module, scenario, fullMeshPath):
     if os.path.exists(outDir):
       print('Partition {} already exists'.format(outDir))
     else:
-      print('Generating partition files for {}'.format(outDir))
+      print('Generating partition files for \n{}'.format(outDir))
       os.system('mkdir -p ' + outDir)
 
       args = ("python3",    str(this_file_path)+'/partition_uniform.py',
@@ -359,7 +385,6 @@ def make_uniform_partitions_1d(workDir, module, scenario, fullMeshPath):
       popen  = subprocess.Popen(args, stdout=subprocess.PIPE);
       popen.wait()
       output = popen.stdout.read();
-      print(output)
 
 # -------------------------------------------------------------------
 def make_uniform_partitions_2d(workDir, module, scenario, fullMeshPath):
@@ -376,7 +401,7 @@ def make_uniform_partitions_2d(workDir, module, scenario, fullMeshPath):
     if os.path.exists(outDir):
       print('Partition {} already exists'.format(outDir))
     else:
-      print('Generating partition files for {}'.format(outDir))
+      print('Generating partition files for \n{}'.format(outDir))
       os.system('mkdir -p ' + outDir)
 
       args = ("python3",    str(this_file_path)+'/partition_uniform.py',
@@ -387,7 +412,6 @@ def make_uniform_partitions_2d(workDir, module, scenario, fullMeshPath):
       popen  = subprocess.Popen(args, stdout=subprocess.PIPE);
       popen.wait()
       output = popen.stdout.read();
-      print(output)
 
 # -------------------------------------------------------------------
 def make_full_mesh_for_odrom_using_partition_based_indexing(workDir, pdaDir, \
@@ -422,7 +446,7 @@ def make_full_mesh_for_odrom_using_partition_based_indexing(workDir, pdaDir, \
       gids = np.arange(0, totalCells)
       np.savetxt(outDir+'/sample_mesh_gids.dat', gids, fmt='%8i')
 
-      print('Generating sample mesh in:')
+      print('Generating partition-based FULL mesh in:')
       print(' {}'.format(outDir))
       meshScriptsDir = pdaDir + "/meshing_scripts"
       args = ("python3", meshScriptsDir+'/create_sample_mesh.py',
@@ -609,6 +633,58 @@ def compute_poly_bases_to_match_pod(dimens, fomMesh, outDir, \
              np.array(list(modesPerTile.values())), \
              fmt="%5d")
 
+
+# -------------------------------------------------------------------
+def compute_full_domain_state_pod(workDir, module, scenario, \
+                                  setId, dataDirs, fomMesh):
+  '''
+  compute pod from state snapshots on the FULL domain
+  '''
+  fomTotCells = find_total_cells_from_info_file(fomMesh)
+  totFomDofs  = fomTotCells*module.numDofsPerCell
+
+  # find from scenario if we want to subtract initial condition
+  # from snapshots before doing pod.
+  subtractInitialCondition = module.use_ic_reference_state[scenario]
+
+  # load snapshots once
+  fomStateSnapsFullDomain = load_fom_state_snapshot_matrix(dataDirs, totFomDofs, \
+                                                           module.numDofsPerCell, \
+                                                           subtractInitialCondition)
+  print("pod: fomStateSnapsFullDomain.shape = ", fomStateSnapsFullDomain.shape)
+
+  outDir = path_to_full_domain_state_pod_data_dir(workDir, setId)
+  if os.path.exists(outDir):
+    print('{} already exists'.format(outDir))
+  else:
+    os.system('mkdir -p ' + outDir)
+    lsvFile = outDir + '/lsv_state_p_0'
+    svaFile = outDir + '/sva_state_p_0'
+    do_svd_py(fomStateSnapsFullDomain, lsvFile, svaFile)
+  print("")
+
+# -------------------------------------------------------------------
+def compute_full_domain_rhs_pod(workDir, module, scenario, \
+                                setId, dataDirs, fomMesh):
+  '''
+  compute pod for rhs snapshosts on FULL domain
+  '''
+  fomTotCells = find_total_cells_from_info_file(fomMesh)
+  totFomDofs  = fomTotCells*module.numDofsPerCell
+  fomRhsSnapsFullDomain   = load_fom_rhs_snapshot_matrix(dataDirs, totFomDofs, \
+                                                         module.numDofsPerCell)
+  print("pod: fomRhsSnapsFullDomain.shape = ", fomRhsSnapsFullDomain.shape)
+
+  outDir = path_to_full_domain_rhs_pod_data_dir(workDir, setId)
+  if os.path.exists(outDir):
+    print('{} already exists'.format(outDir))
+  else:
+    os.system('mkdir -p ' + outDir)
+    lsvFile = outDir + '/lsv_rhs_p_0'
+    svaFile = outDir + '/sva_rhs_p_0'
+    do_svd_py(fomRhsSnapsFullDomain, lsvFile, svaFile)
+  print("")
+
 # -------------------------------------------------------------------
 def compute_partition_based_state_pod(workDir, module, scenario, \
                                       setId, dataDirs, fomMesh):
@@ -620,7 +696,7 @@ def compute_partition_based_state_pod(workDir, module, scenario, \
 
   # find from scenario if we want to subtract initial condition
   # from snapshots before doing pod.
-  subtractInitialCondition = module.odrom_use_ic_reference_state[scenario]
+  subtractInitialCondition = module.use_ic_reference_state[scenario]
 
   # only load snapshots once
   fomStateSnapsFullDomain = load_fom_state_snapshot_matrix(dataDirs, totFomDofs, \
@@ -669,10 +745,6 @@ def compute_partition_based_rhs_pod(workDir, module, scenario, \
   '''
   fomTotCells = find_total_cells_from_info_file(fomMesh)
   totFomDofs  = fomTotCells*module.numDofsPerCell
-
-  # find from scenario if we want to subtract initial condition
-  # from snapshots before doing pod.
-  subtractInitialCondition = module.odrom_use_ic_reference_state[scenario]
 
   # only load snapshots once
   fomRhsSnapsFullDomain   = load_fom_rhs_snapshot_matrix(dataDirs, totFomDofs, \
@@ -749,6 +821,7 @@ def find_modes_per_tile_from_target_energy(podDir, energy):
     singValues = np.loadtxt(it)
     tileId = get_tile_id(it)
     K = compute_cumulative_energy(singValues, energy)
+    # WARNING: this might need to change
     modesPerTileDic[tileId] = max(K, 5)
 
   return modesPerTileDic
@@ -897,20 +970,38 @@ def compute_gappy_projector(outDir, partitionInfoDir, \
     myFullPhiFile = statePodDir + "/lsv_state_p_" + str(tileId)
     myFullPhi     = load_basis_from_binary_file(myFullPhiFile)[:,0:myNumModes]
 
-    # load my full rhs pod
-    rhsSingVals = np.loadtxt(rhsPodDir + "/sva_rhs_p_" + str(tileId))
-    # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-    K = compute_cumulative_energy(rhsSingVals, 99.999999)
-    myFullRhsPodFile = rhsPodDir + "/lsv_rhs_p_" + str(tileId)
-    myTheta     = load_basis_from_binary_file(myFullRhsPodFile)[:,0:K]
-    # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-
     # indexing info
     myFile1      = partitionInfoDir + "/cell_gids_wrt_full_mesh_p_"+str(tileId)+".txt"
     myCellGids   = np.loadtxt(myFile1, dtype=int)
     myFile2      = sampleMeshDir + "/sample_mesh_gids_p_"+str(tileId)+".txt"
     mySmMeshGids = np.loadtxt(myFile2, dtype=int)
     mySmCount    = len(mySmMeshGids)
+
+    # constraint to check (from Eric):
+    #   myNumModes < K < (numDofsPerCell * mySmCount)
+
+    #assert(mySmCount*numDofsPerCell >= myNumModes)
+
+
+    # WARNING:  might need to change this but this seems to
+    # work better than other things
+    rhsSingVals = np.loadtxt(rhsPodDir + "/sva_rhs_p_" + str(tileId))
+    K = compute_cumulative_energy(rhsSingVals, 99.99999)
+    #K = myNumModes*4
+    print("tile::: ", K, myNumModes, mySmCount)
+    if mySmCount*numDofsPerCell < K:
+      print("Cannot have K > mySmCount*numDofsPerCell in tileId = {:>5}, adapting K".format(tileId))
+      K = mySmCount*numDofsPerCell - 1
+
+    # K should be larger than myNumModes
+    if K < myNumModes:
+      print("Cannot have K < myNumModes in tileId = {:>5}, adapting K".format(tileId))
+      K = myNumModes + 1
+
+    myFullRhsPodFile = rhsPodDir + "/lsv_rhs_p_" + str(tileId)
+    myTheta = load_basis_from_binary_file(myFullRhsPodFile)[:,0:K]
+    # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
 
     # need to slice pod of rhs (i.e. theta) to get elements on my sample mesh cells
     # note that I need to do the following beacuse the POD modes saved are computed
@@ -967,6 +1058,119 @@ def make_od_rom_initial_condition(workDir, appObjForIc, \
       romState[romStateSpanStart:romStateSpanStart+myK] = np.copy(tmpyhat)
       romStateSpanStart += myK
     return romState
+
+
+# -------------------------------------------------------------------
+def run_full_standard_galerkin_for_all_test_values(workDir, problem, \
+                                                   module, scenario, \
+                                                   fomMeshPath, basesDir, \
+                                                   energyValue, \
+                                                   polyOrder, numModes, \
+                                                   setId, basesKind):
+
+  meshObj = pda.load_cellcentered_uniform_mesh(fomMeshPath)
+
+  # this is rom WITHOUT HR, so the following should hold:
+  stencilDofsCount = meshObj.stencilMeshSize()*module.numDofsPerCell
+  sampleDofsCount  = meshObj.sampleMeshSize()*module.numDofsPerCell
+  assert(stencilDofsCount == sampleDofsCount)
+  fomTotalDofs = stencilDofsCount
+
+  # loop over all test param values to do
+  param_values = module.test_points[scenario]
+  for k, val in param_values.items():
+
+    # figure out the name of the output directory
+    outDir = workDir + "/standardrom_full_"+basesKind
+    if polyOrder != None:
+      outDir += "_order_"+str(polyOrder)
+    if energyValue != None:
+      outDir += "_"+str(energyValue)
+    if setId != None:
+      outDir += "_set_"+str(setId)
+    outDir += "_"+str(k)
+
+    # check outdir, make and run if needed
+    if os.path.exists(outDir):
+      print('{} already exists'.format(outDir))
+    else:
+      print("Running standard rom in {}".format(os.path.basename(outDir)))
+      os.system('mkdir -p ' + outDir)
+      romRunDic    = module.base_dic[scenario]['odrom'].copy()
+      coeffDic     = module.base_dic[scenario]['physicalCoefficients'].copy()
+      appObj = module.create_problem_for_scenario(scenario, meshObj, \
+                                                  coeffDic, romRunDic, val)
+      # write some info to run directory
+      f = open(outDir+"/rom_dofs_count.txt", "w")
+      f.write(str(numModes))
+      f.close()
+
+      if basesKind == "using_pod_bases":
+        romRunDic['energy'] = energyValue
+      if basesKind == "using_poly_bases":
+        romRunDic['polyOrder'] = polyOrder
+
+      romRunDic['basesDir'] = basesDir
+      inputFile = outDir + "/input.yaml"
+      write_dic_to_yaml_file(inputFile, romRunDic)
+
+      usingIcAsRefState = module.use_ic_reference_state[scenario]
+
+      # make ROM initial state
+      romState = None
+      if usingIcAsRefState:
+        # dont need to do projection, romState is simply all zeros
+        romState = np.zeros(numModes)
+      else:
+        myPhi = load_basis_from_binary_file(basesDir+"/lsv_state_p_0")[:,0:numModes]
+        fomIc = appObj.initialCondition()
+        romState = np.dot(myPhi.transpose(), fomIc)
+
+      refState = appObj.initialCondition() \
+        if usingIcAsRefState else np.array([None])
+
+      # construct standard rom object
+      romObj = StandardRomFull(appObj, module.dimensionality, \
+                               module.numDofsPerCell, numModes, \
+                               basesDir, refState)
+      # initial condition
+      romObj.reconstructFomStateFullMeshOrdering(romState)
+      np.savetxt(outDir+"/y_rec_ic.txt", romObj.viewFomState())
+
+      # time loop
+      dt         = romRunDic['dt']
+      finalTime  = romRunDic['finalTime']
+      numSteps   = int(finalTime/dt)
+      odeScheme  = romRunDic['odeScheme']
+
+      # create observer
+      stateSamplingFreq = int(romRunDic['stateSamplingFreq'])
+      # here I need to pass {0: numModes} because of API compatibility
+      obsO = RomObserver(stateSamplingFreq, numSteps, {0: numModes})
+
+      pTimeStart = time.time()
+      if odeScheme in ["SSPRK3", "ssprk3"]:
+        odrom_ssprk3(romObj, romState, numSteps, dt, obsO)
+      elif odeScheme in ["RungeKutta4", "RK4", "rk4"]:
+        odrom_rk4(romObj, romState, numSteps, dt, obsO)
+      elif odeScheme in ["RungeKutta2", "RK2", "rk2"]:
+        odrom_rk2(romObj, romState, numSteps, dt, obsO)
+
+      elapsed = time.time() - pTimeStart
+      print("elapsed = {}".format(elapsed))
+      f = open(outDir+"/timing.txt", "w")
+      f.write(str(elapsed))
+      f.close()
+
+      # tell observer to write snapshots to file
+      obsO.write(outDir)
+      # reconstruct final state
+      romObj.reconstructFomStateFullMeshOrdering(romState)
+      np.savetxt(outDir+"/y_rec_final.txt", romObj.viewFomState())
+      print("")
+
+
+
 
 # -------------------------------------------------------------------
 def run_full_od_galerkin_for_all_test_values(workDir, problem, \
@@ -1045,7 +1249,7 @@ def run_full_od_galerkin_for_all_test_values(workDir, problem, \
       write_dic_to_yaml_file(inputFile, romRunDic)
 
       # make ROM initial state
-      usingIcAsRefState = module.odrom_use_ic_reference_state[scenario]
+      usingIcAsRefState = module.use_ic_reference_state[scenario]
       romState = make_od_rom_initial_condition(workDir, appObjForIc, \
                                                partInfoDir, basesDir, \
                                                modesPerTileDic, \
@@ -1171,7 +1375,7 @@ def run_hr_od_galerkin_for_all_test_values(workDir, problem, module,
       write_dic_to_yaml_file(inputFile, romRunDic)
 
       # make ROM initial state
-      usingIcAsRefState = module.odrom_use_ic_reference_state[scenario]
+      usingIcAsRefState = module.use_ic_reference_state[scenario]
       romState = make_od_rom_initial_condition(workDir, appObjForIc, \
                                                partInfoDir, podDir, \
                                                modesPerTileDic, \
@@ -1286,7 +1490,7 @@ def run_masked_gappy_od_galerkin_for_all_test_values(workDir, problem, \
       write_dic_to_yaml_file(inputFile, romRunDic)
 
       # make ROM initial state
-      usingIcAsRefState = module.odrom_use_ic_reference_state[scenario]
+      usingIcAsRefState = module.use_ic_reference_state[scenario]
       romState = make_od_rom_initial_condition(workDir, appObj, \
                                                partInfoDir, podDir, \
                                                modesPerTileDic, \
@@ -1354,7 +1558,7 @@ def run_od_pod_masked_galerkin_gappy(workDir, problem, module, \
     # -------
     # loop 2: over all POD computed from various sets of train runs
     # ------
-    howManySets = len(module.odrom_basis_sets[scenario].keys())
+    howManySets = len(module.basis_sets[scenario].keys())
     for setId in range(howManySets):
       currPodDir = path_to_pod_data_dir(workDir, partitionStringIdentifier, setId)
 
@@ -1455,13 +1659,13 @@ def run_od_pod_galerkin_quad(workDir, problem, module, \
           # -------
           # loop 5: over all test values
           # ------
-          run_gappy_od_galerkin_for_all_test_values(workDir, problem, \
-                                                    module, scenario, \
-                                                    partInfoDirIt, \
-                                                    fomMeshPath, sampleMeshDirIt, \
-                                                    currStatePodDir, projectorDir, \
-                                                    energyValue, modesPerTileDic, \
-                                                    setId, smKeyword)
+          run_hr_od_galerkin_for_all_test_values(workDir, problem, \
+                                                 module, scenario, \
+                                                 partInfoDirIt, \
+                                                 fomMeshPath, sampleMeshDirIt, \
+                                                 currStatePodDir, projectorDir, \
+                                                 energyValue, modesPerTileDic, \
+                                                 setId, smKeyword, "quad")
 
 
 
@@ -1478,7 +1682,7 @@ def run_od_pod_galerkin_gappy(workDir, problem, module, \
     # -------
     # loop 2: over all POD computed from various sets of train runs
     # ------
-    howManySets = len(module.odrom_basis_sets[scenario].keys())
+    howManySets = len(module.basis_sets[scenario].keys())
     for setId in range(howManySets):
       currStatePodDir = path_to_state_pod_data_dir(workDir, partitionStringIdentifier, setId)
       currRhsPodDir   = path_to_rhs_pod_data_dir(workDir, partitionStringIdentifier, setId)
@@ -1520,9 +1724,36 @@ def run_od_pod_galerkin_gappy(workDir, problem, module, \
                                                  fomMeshPath, sampleMeshDirIt, \
                                                  currStatePodDir, projectorDir, \
                                                  energyValue, modesPerTileDic, \
-                                                 setId, smKeyword,
-                                                 "gappy")
+                                                 setId, smKeyword, "gappy")
 
+
+# -------------------------------------------------------------------
+def run_standard_pod_galerkin_full(workDir, problem, module, \
+                                   scenario, fomMeshPath):
+
+  # -------
+  # loop 2: over all POD computed from various sets of train runs
+  # ------
+  howManySets = len(module.basis_sets[scenario].keys())
+  for setId in range(howManySets):
+    currPodDir = path_to_full_domain_state_pod_data_dir(workDir, setId)
+    # -------
+    # loop 3: over all target energies
+    # ------
+    for energyValue in module.standardrom_energies[scenario]:
+      modesPerTileDic = find_modes_per_tile_from_target_energy(currPodDir, energyValue)
+      # we know here there is a single tile since it is the full domain
+      # so simplify things
+      numModes = modesPerTileDic[0]
+
+      # -------
+      # loop 4: over all test values
+      # ------
+      run_full_standard_galerkin_for_all_test_values(workDir, problem, module, \
+                                                     scenario, fomMeshPath, \
+                                                     currPodDir, energyValue, None, \
+                                                     numModes, setId, \
+                                                     "using_pod_bases")
 
 # -------------------------------------------------------------------
 def run_od_pod_galerkin_full(workDir, problem, module, \
@@ -1552,7 +1783,7 @@ def run_od_pod_galerkin_full(workDir, problem, module, \
     # -------
     # loop 2: over all POD computed from various sets of train runs
     # ------
-    howManySets = len(module.odrom_basis_sets[scenario].keys())
+    howManySets = len(module.basis_sets[scenario].keys())
     for setId in range(howManySets):
       currPodDir = path_to_state_pod_data_dir(workDir, partitionStringIdentifier, setId)
 
@@ -1739,11 +1970,10 @@ def process_partitions_sample_mesh_files(pdaDir, fomMeshPath, sampleMeshDir, \
      np.savetxt(sampleMeshDir+'/stencil_mesh_gids_p_'+str(tileId)+'.dat', commonElem, fmt='%8i')
 
 
-
 # -------------------------------------------------------------------
-def compute_sample_mesh_psampling(workDir, module, scenario, pdaDir, fomMeshPath):
+def compute_sample_mesh_psampling_od(workDir, module, scenario, pdaDir, fomMeshPath):
   # get list of sample mesh cases, filter only those having "psampling" in it
-  sampleMeshesList = [it for it in module.odrom_sample_meshes[scenario]\
+  sampleMeshesList = [it for it in module.sample_meshes[scenario]\
                       if "psampling" in it]
   print(sampleMeshesList)
 
@@ -1760,7 +1990,7 @@ def compute_sample_mesh_psampling(workDir, module, scenario, pdaDir, fomMeshPath
     # -------
     # loop 2: over all setIds
     # ------
-    howManySets = len(module.odrom_basis_sets[scenario].keys())
+    howManySets = len(module.basis_sets[scenario].keys())
     for setId in range(howManySets):
       # for psampling I need to get the rhs modes
       currRhsPodDir = path_to_rhs_pod_data_dir(workDir, partitionStringIdentifier, setId)
@@ -1804,6 +2034,11 @@ def compute_sample_mesh_psampling(workDir, module, scenario, pdaDir, fomMeshPath
 
             myRhsPodFile = currRhsPodDir + "/lsv_rhs_p_" + str(tileId)
             myRhsPod = load_basis_from_binary_file(myRhsPodFile)[whichDofToUseForFindingCells::module.numDofsPerCell]
+            if myRhsPod.shape[1] < mySampleMeshCount:
+              print("Warning: psampling sample mesh in tileId = {:>5}:".format(tileId))
+              print("         not enough rhs modes, automatically reducing sample mesh count")
+              mySampleMeshCount = myRhsPod.shape[1]-1
+
             Q,R,P = scipyla.qr(myRhsPod[:,0:mySampleMeshCount].transpose(), pivoting=True)
             mylocalids = np.array(np.sort(P[0:mySampleMeshCount]))
             mySampleMeshGidsWrtFullMesh = myCellGids[mylocalids]
@@ -1822,9 +2057,9 @@ def compute_sample_mesh_psampling(workDir, module, scenario, pdaDir, fomMeshPath
 
 
 # -------------------------------------------------------------------
-def compute_sample_mesh_random(workDir, module, scenario, pdaDir, fomMeshPath):
+def compute_sample_mesh_random_od(workDir, module, scenario, pdaDir, fomMeshPath):
   # get list of RANDOM sample mesh cases from module
-  sampleMeshesList = [it for it in module.odrom_sample_meshes[scenario]\
+  sampleMeshesList = [it for it in module.sample_meshes[scenario]\
                       if "random" in it]
   print(sampleMeshesList)
 
@@ -1866,9 +2101,10 @@ def compute_sample_mesh_random(workDir, module, scenario, pdaDir, fomMeshPath):
           myCellGids = np.loadtxt(myFile, dtype=int)
           myNumCells = len(myCellGids)
           mySampleMeshCount = int(myNumCells * fractionOfCellsNeeded)
-          print(" tileId = {:>5}".format(tileId))
-          print(" numCellsInThisPartition = ",    myNumCells)
-          print(" sampleMeshSizePerPartition = ", mySampleMeshCount)
+          print(" tileId = {:>5}, myNumCells = {:>5}, mySmCount = {:>5}".format(tileId, \
+                                                                                myNumCells, \
+                                                                                mySampleMeshCount))
+
 
           smCellsIndices = random.sample(range(0, myNumCells), mySampleMeshCount)
           mylocalids = np.sort(smCellsIndices)
@@ -1885,6 +2121,112 @@ def compute_sample_mesh_random(workDir, module, scenario, pdaDir, fomMeshPath):
 
         process_partitions_sample_mesh_files(pdaDir, fomMeshPath, \
                                              outDir, partInfoDirIt, nTiles)
+
+
+# -------------------------------------------------------------------
+def compute_sample_mesh_random_full_domain(workDir, module, scenario, pdaDir, fomMeshPath):
+  # get list of RANDOM sample mesh cases from module
+  sampleMeshesList = [it for it in module.sample_meshes[scenario]\
+                      if "random" in it]
+  print(sampleMeshesList)
+
+  for sampleMeshCaseIt in sampleMeshesList:
+    fractionOfCellsNeeded = sampleMeshCaseIt[1]
+    # create name of directory where to store the sample mesh
+    outDir = path_to_full_domain_sample_mesh_random(workDir, fractionOfCellsNeeded)
+    if os.path.exists(outDir):
+      print('{} already exists'.format(outDir))
+    else:
+      print('Generating RANDOM sample mesh in {}'.format(outDir))
+      os.system('mkdir -p ' + outDir)
+
+      fomNumCells = find_total_cells_from_info_file(fomMeshPath)
+      sampleMeshCount = int(fomNumCells * fractionOfCellsNeeded)
+      sample_mesh_gids = random.sample(range(0, fomNumCells), sampleMeshCount)
+      sample_mesh_gids = np.sort(sample_mesh_gids)
+      print(" numCellsFullDomain = ", fomNumCells)
+      print(" sampleMeshSize     = ", sampleMeshCount)
+      np.savetxt(outDir+'/sample_mesh_gids_p_0.txt', sample_mesh_gids, fmt='%8i')
+
+      print('Generating sample mesh in:')
+      print(' {}'.format(outDir))
+      owd = os.getcwd()
+      meshScriptsDir = pdaDir + "/meshing_scripts"
+      args = ("python3", meshScriptsDir+'/create_sample_mesh.py',
+              "--fullMeshDir", fomMeshPath,
+              "--sampleMeshIndices", outDir+'/sample_mesh_gids_p_0.txt',
+              "--outDir", outDir)
+      popen  = subprocess.Popen(args, stdout=subprocess.PIPE);
+      popen.wait()
+      output = popen.stdout.read();
+      print(output)
+
+
+# -------------------------------------------------------------------
+def compute_sample_mesh_psampling_full_domain(workDir, module, scenario, pdaDir, fomMeshPath):
+  # get list of sample mesh cases, filter only those having "psampling" in it
+  sampleMeshesList = [it for it in module.sample_meshes[scenario]\
+                      if "psampling" in it]
+  print(sampleMeshesList)
+
+  # -------
+  # loop 2: over all setIds
+  # ------
+  howManySets = len(module.basis_sets[scenario].keys())
+  for setId in range(howManySets):
+    # for psampling I need to get the rhs modes
+    currRhsPodDir = path_to_full_domain_rhs_pod_data_dir(workDir, setId)
+
+    # -------
+    # loop 3: over all target sample mesh cases
+    # ------
+    for sampleMeshCaseIt in sampleMeshesList:
+      # extract the fraction, which must be in position 1
+      assert(not isinstance(sampleMeshCaseIt[1], str))
+      fractionOfCellsNeeded = sampleMeshCaseIt[1]
+
+      # for psampling sample mesh, I need to use a certain dof/variable
+      # for exmaple for swe, there is h,u,v so I need to know which one
+      # to use to find the cells
+      # this info is provided in the problem
+      assert(isinstance(sampleMeshCaseIt[2], int))
+      whichDofToUseForFindingCells = sampleMeshCaseIt[2]
+
+      # name of where to generate files
+      outDir = path_to_full_domain_sample_mesh_psampling(workDir, setId, fractionOfCellsNeeded)
+      if os.path.exists(outDir):
+        print('{} already exists'.format(outDir))
+      else:
+        print('Generating psampling sample mesh in: \n {}'.format(outDir))
+        os.system('mkdir -p ' + outDir)
+
+        fomNumCells = find_total_cells_from_info_file(fomMeshPath)
+        mySampleMeshCount = int(fomNumCells * fractionOfCellsNeeded)
+        rhsPodFile = currRhsPodDir + "/lsv_rhs_p_0"
+        myRhsPod = load_basis_from_binary_file(rhsPodFile)[whichDofToUseForFindingCells::module.numDofsPerCell]
+        if myRhsPod.shape[1] < mySampleMeshCount:
+          print("Warning: psampling sample mesh for full domain")
+          print("         not enough rhs modes, automatically reducing sample mesh count")
+          mySampleMeshCount = myRhsPod.shape[1]-1
+
+        Q,R,P = scipyla.qr(myRhsPod[:,0:mySampleMeshCount].transpose(), pivoting=True)
+        mySampleMeshGidsWrtFullMesh = np.sort(P[0:mySampleMeshCount])
+        np.savetxt(outDir+'/sample_mesh_gids_p_0.txt',\
+                   mySampleMeshGidsWrtFullMesh, fmt='%8i')
+
+        print('Generating sample mesh in:')
+        print(' {}'.format(outDir))
+        owd = os.getcwd()
+        meshScriptsDir = pdaDir + "/meshing_scripts"
+        args = ("python3", meshScriptsDir+'/create_sample_mesh.py',
+                "--fullMeshDir", fomMeshPath,
+                "--sampleMeshIndices", outDir+'/sample_mesh_gids_p_0.txt',
+                "--outDir", outDir)
+        popen  = subprocess.Popen(args, stdout=subprocess.PIPE);
+        popen.wait()
+        output = popen.stdout.read();
+        print(output)
+
 
 #==============================================================
 # main
@@ -1941,10 +2283,6 @@ if __name__ == '__main__':
   print(module)
   print("")
 
-
-  print("=================================================")
-  print("Check scenario is valid")
-  print("=================================================")
   # verify that scenario is a valid key in the specialized dics in module.
   # use base_dic to check this because that dic should always be present.
   valid_scenarios_ids = list(module.base_dic.keys())
@@ -1994,65 +2332,96 @@ if __name__ == '__main__':
   run_foms(workDir, problem, module, scenario, "test", fomMeshPath)
   print("")
 
+
   print("=================================================")
   print("Make partitions")
   print("=================================================")
-  # loop over partitioning styles (e.g. uniform tiling, something else)
-  # E.g. might add a new method that use FOM train data so that is also why
-  # the partitioning stage makes sense to be AFTER the FOM train runs are complete
-  for partitioningStyleIt in module.odrom_partitioning_style[scenario]:
-    # currently, only uniform is supported
-    if partitioningStyleIt != "uniform":
-      em = "Invalid partitionStyle = {}".format(partitioningStyleIt)
-      sys.exit(em)
-    if module.dimensionality not in [1,2]:
-      em = "Invalid dimensionality = {}".format(module.dimensionality)
-      sys.exit(em)
+  if scenario in module.odrom_partitioning_style:
+    # loop over partitioning styles (e.g. uniform tiling, something else)
+    # E.g. might add a new method that use FOM train data so that is also why
+    # the partitioning stage makes sense to be AFTER the FOM train runs are complete
+    for partitioningStyleIt in module.odrom_partitioning_style[scenario]:
+      # currently, only uniform is supported
+      if partitioningStyleIt != "uniform":
+        em = "Invalid partitionStyle = {}".format(partitioningStyleIt)
+        sys.exit(em)
+      if module.dimensionality not in [1,2]:
+        em = "Invalid dimensionality = {}".format(module.dimensionality)
+        sys.exit(em)
 
-    if module.dimensionality == 1:
-      make_uniform_partitions_1d(workDir, module, scenario, fomMeshPath)
-    elif module.dimensionality == 2:
-      make_uniform_partitions_2d(workDir, module, scenario, fomMeshPath)
+      if module.dimensionality == 1:
+        make_uniform_partitions_1d(workDir, module, scenario, fomMeshPath)
+      elif module.dimensionality == 2:
+        make_uniform_partitions_2d(workDir, module, scenario, fomMeshPath)
+  else:
+    print("nothing to do")
 
   print("")
 
   print("=================================================")
   print("Make partition-based full meshes ")
   print("=================================================")
-  # for FULL od-rom without HR, for performance reasons,
-  # we don't/should not use the same full mesh used in the fom.
-  # We need to make a new full mesh with a new indexing
-  # that is consistent with the partitions and allows continguous storage
-  # of the state and rhs within each tile
-  make_full_mesh_for_odrom_using_partition_based_indexing(workDir, pdaDir, \
-                                                          module, fomMeshPath)
+  if "PodOdGalerkinFull"   in module.algos[scenario] or \
+     "PolyOdGalerkinFully" in module.algos[scenario]:
+
+    # needed if we are doing PodOdGalerkinFull or LegendreOdGalerkinFull
+    # indeed, for od-rom without HR, for performance reasons,
+    # we don't/should not use the same full mesh used in the fom.
+    # We need to make a new full mesh with a new indexing
+    # that is consistent with the partitions and allows continguous storage
+    # of the state and rhs within each tile
+    make_full_mesh_for_odrom_using_partition_based_indexing(workDir, pdaDir, \
+                                                            module, fomMeshPath)
   print("")
 
 
   print("=================================================")
-  print("Compute partition-based POD for state and rhs")
+  print("Compute FULL domain POD ")
+  print("=================================================")
+  '''
+  first check if we want to do standard rom, in which
+  case we need to compute POD on the full domain
+  '''
+  if "PodStandardGalerkinFull" in module.algos[scenario] or \
+     "PodStandardGalerkinGappy" in module.algos[scenario]:
+    for setId, trainIndices in module.basis_sets[scenario].items():
+      print("FULL domain STATE POD for setId = {}".format(setId))
+      print("------------------------------------")
+      trainDirs = find_fom_train_dirs_for_target_set_of_indices(workDir, trainIndices)
+      compute_full_domain_state_pod(workDir, module, scenario, \
+                                    setId, trainDirs, fomMeshPath)
+
+      if "PodStandardGalerkinGappy" in module.algos[scenario]:
+        print("FULL domain RHS POD for setId = {}".format(setId))
+        print("----------------------------------")
+        compute_full_domain_rhs_pod(workDir, module, scenario, \
+                                    setId, trainDirs, fomMeshPath)
+    print("")
+
+  print("=================================================")
+  print("Compute partition-based POD ")
   print("=================================================")
   '''
   The pod modes for each tile must be computed in two cases:
-  1. if scenario explicitly wants podGalerkinFull or podGalerkinGappy
-  2. if scenario has PolyGalerkin and the poly_order = -1
+  1. if scenario explicitly wants PodOdGalerkinFull or PodOdGalerkinGappy
+  2. if scenario has PolyOdGalerkin and the poly_order = -1
      because poly_order = -1 indicates that we compute the poly order
      in each tile such that we match as possible the number of local pod modes
   '''
   mustDoPodModesForEachTile = False
-  if "PodGalerkinFull"   in module.odrom_algos[scenario] or \
-     "PodGalerkinGappy"  in module.odrom_algos[scenario] or \
-     "PodGalerkinMasked" in module.odrom_algos[scenario] or \
-     "PodGalerkinQuad"   in module.odrom_algos[scenario]:
+  if "PodOdGalerkinFull"   in module.algos[scenario] or \
+     "PodOdGalerkinGappy"  in module.algos[scenario] or \
+     "PodOdGalerkinMasked" in module.algos[scenario] or \
+     "PodOdGalerkinQuad"   in module.algos[scenario]:
     mustDoPodModesForEachTile = True
-  if "PolyGalerkinFull" in module.odrom_algos[scenario] and \
+  if "PolyOdGalerkinFull" in module.algos[scenario] and \
      -1 in module.odrom_poly_order[scenario]:
     mustDoPodModesForEachTile = True
 
   if mustDoPodModesForEachTile:
-    for setId, trainIndices in module.odrom_basis_sets[scenario].items():
-      print("Handling setId = {}".format(setId))
-      print("------------------------")
+    for setId, trainIndices in module.basis_sets[scenario].items():
+      print("partition-based POD for setId = {}".format(setId))
+      print("----------------------------------")
       trainDirs = find_fom_train_dirs_for_target_set_of_indices(workDir, trainIndices)
       compute_partition_based_state_pod(workDir, module, scenario, \
                                         setId, trainDirs, fomMeshPath)
@@ -2061,52 +2430,71 @@ if __name__ == '__main__':
     print("")
 
 
-  if scenario in module.odrom_sample_meshes:
-    print("=================================================")
-    print("Make sample meshes")
-    print("=================================================")
-    sampleMeshesList = module.odrom_sample_meshes[scenario]
-
-    # check if we have to do RANDOM sample meshes
+  print("=================================================")
+  print("Make sample meshes")
+  print("=================================================")
+  '''
+  first handle the case for regular galerkin if needed
+  '''
+  if "PodStandardGalerkinGappy" in module.algos[scenario]:
+    sampleMeshesList = module.sample_meshes[scenario]
     if any(["random" in it for it in sampleMeshesList]):
-      compute_sample_mesh_random(workDir, module, scenario, pdaDir, fomMeshPath)
-
-    # check if we have to do PSAMPLING sample meshes
+      compute_sample_mesh_random_full_domain(workDir, module, scenario, pdaDir, fomMeshPath)
     if any(["psampling" in it for it in sampleMeshesList]):
-      compute_sample_mesh_psampling(workDir, module, scenario, pdaDir, fomMeshPath)
+      compute_sample_mesh_psampling_full_domain(workDir, module, scenario, pdaDir, fomMeshPath)
+    print("")
+
+  '''
+  then handle the case for the overdecomposed
+  '''
+  if "PodOdGalerkinGappy" in module.algos[scenario]:
+    sampleMeshesList = module.sample_meshes[scenario]
+    if any(["random" in it for it in sampleMeshesList]):
+      compute_sample_mesh_random_od(workDir, module, scenario, pdaDir, fomMeshPath)
+    if any(["psampling" in it for it in sampleMeshesList]):
+      compute_sample_mesh_psampling_od(workDir, module, scenario, pdaDir, fomMeshPath)
     print("")
 
 
-  if "PodGalerkinFull" in module.odrom_algos[scenario]:
-    print("=================================================")
-    print("Running FULL pod od-galerkin ")
-    print("=================================================")
+  print("=================================================")
+  print("Running FULL pod standard-galerkin ")
+  print("=================================================")
+  if "PodStandardGalerkinFull" in module.algos[scenario]:
+    run_standard_pod_galerkin_full(workDir, problem, module, scenario, fomMeshPath)
+  print("")
+
+  print("=================================================")
+  print("Running FULL pod od-galerkin ")
+  print("=================================================")
+  if "PodOdGalerkinFull" in module.algos[scenario]:
     run_od_pod_galerkin_full(workDir, problem, module, scenario, fomMeshPath)
   print("")
 
-
-  if "PodGalerkinGappy" in module.odrom_algos[scenario]:
+  if "PodOdGalerkinGappy" in module.algos[scenario]:
     print("=================================================")
     print("Running Gappy pod od-galerkin ")
     print("=================================================")
     run_od_pod_galerkin_gappy(workDir, problem, module, scenario, fomMeshPath)
   print("")
 
+  sys.exit()
   # print("=================================================")
   # print("Running Masked Gappy pod od-galerkin ")
   # print("=================================================")
-  # if "PodGalerkinGappyMasked" in module.odrom_algos[scenario]:
+  # if "PodGalerkinGappyMasked" in module.algos[scenario]:
   #   run_od_pod_masked_galerkin_gappy(workDir, problem, module, scenario, fomMeshPath)
   # print("")
 
   # print("=================================================")
   # print("Running Quad pod od-galerkin ")
   # print("=================================================")
-  # if "PodGalerkinQuad" in module.odrom_algos[scenario]:
+  # if "PodGalerkinQuad" in module.algos[scenario]:
   #   run_od_pod_galerkin_quad(workDir, problem, module, scenario, fomMeshPath)
   # print("")
 
   sys.exit()
+
+
 
 
 

@@ -129,7 +129,7 @@ odrom_algos[2]        = ["PodGalerkinGappy"]
 odrom_energies[2]     = [99.999999999]
 odrom_basis_sets[2]   = { 0: [0,1,2] }
 
-odrom_partitioning_topol[2] = [[10,10]]
+odrom_partitioning_topol[2] = [[5,5]]
 odrom_partitioning_style[2] = ['uniform']
 
 odrom_sample_meshes[2] = [["psampling", 0.05, 0]]

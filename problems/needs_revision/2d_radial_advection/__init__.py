@@ -32,24 +32,15 @@ def inviscid_flux_string_to_enum(stringIn):
 def create_problem_for_scenario(scenario, meshObj, coeffDic, dicIn, val):
   schemeStr   = dicIn['inviscidFluxReconstruction']
   schemeEnu   = inviscid_flux_string_to_enum(schemeStr)
-  pulsemag    = coeffDic['pulsemag']
-  pulsespread = coeffDic['pulsespread']
-  diffusion   = coeffDic['diffusion']
-  pulsecenter = coeffDic['pulsecenter']
+  omega       = coeffDic['omega']
 
   if scenario == 1:
-    pulsespread = val
+    omega = val
   else:
-    sys.exit("invalid scenario {} for 2d_burgers".format(scenario))
+    sys.exit("invalid scenario {} for 2d_radial_advection".format(scenario))
 
-  dicIn['pulsemag']    = pulsemag
-  dicIn['pulsespread'] = pulsespread
-  dicIn['diffusion']   = diffusion
-  dicIn['pulsecenter'] = pulsecenter
-  appObj = pda.create_burgers_2d_problem(meshObj, schemeEnu, \
-                                         pda.ViscousFluxReconstruction.FirstOrder,
-                                         pulsemag, pulsespread, diffusion, \
-                                         pulsecenter[0], pulsecenter[1])
+  dicIn['omega'] = omega
+  appObj = pda.create_radial_advection_2d_problem(meshObj, schemeEnu, omega)
 
   return appObj
 

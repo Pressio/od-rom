@@ -41,6 +41,8 @@ def create_problem_for_scenario(scenario, meshObj, coeffDic, dicIn, val):
   # change if something needs to be changed
   if scenario == 1:
     coriolis = val
+  elif scenario == 2:
+    coriolis = val
   else:
     sys.exit("invalid scenario {} for 2d_swe".format(scenario))
 
