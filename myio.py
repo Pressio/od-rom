@@ -87,3 +87,14 @@ def load_fom_rhs_snapshot_matrix(dataDirs, fomTotDofs, numDofsPerCell):
   print("rhs snapshots: shape    : ", M.T.shape)
   print("rhs snapshots: min/max  : ", np.min(M), np.max(M))
   return M.T
+
+# -------------------------------------------------------------------
+def load_rom_state_snapshot_matrix(runDir, totalNumModes):
+  print("reading data from {}".format(runDir))
+  data = np.fromfile(runDir+"/rom_snaps_state")
+  numTimeSteps = int(np.size(data)/totalNumModes)
+  M = np.reshape(data, (numTimeSteps, totalNumModes))
+  #print("A= ", M.flags['C_CONTIGUOUS'])
+  print("rom state snapshots: shape  : ", M.T.shape)
+  print("rom state snapshots: min/max: ", np.min(M), np.max(M))
+  return M.T

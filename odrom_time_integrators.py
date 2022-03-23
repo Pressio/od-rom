@@ -1,9 +1,7 @@
 
 import numpy as np
 from scipy import linalg
-from myio import load_basis_from_binary_file
 import time, math
-
 
 def checknan_and_print_step_status_if_needed(step, nSteps, romState):
   if step % 10 == 0:
@@ -24,7 +22,7 @@ def odrom_rk2(odProblem, yhat, nSteps, dt, observer=None):
   yhat0  = np.zeros_like(yhat)
   half = 0.5
 
-  time = 0.
+  evalTime = 0.
   for step in range(1, nSteps+1):
     if checknan_and_print_step_status_if_needed(step, nSteps, yhat):
       break
@@ -34,19 +32,19 @@ def odrom_rk2(odProblem, yhat, nSteps, dt, observer=None):
 
     # step 1
     odProblem.reconstructFomState(yhat)
-    odProblem.computeFomVelocity(time)
+    odProblem.computeFomVelocity(evalTime)
     odProblem.projectFomVelo(romRhs)
     k1[:] = dt * romRhs
 
     # step 2
     yhat0 = yhat + k1
     odProblem.reconstructFomState(yhat0)
-    odProblem.computeFomVelocity(time+dt)
+    odProblem.computeFomVelocity(evalTime+dt)
     odProblem.projectFomVelo(romRhs)
     k2[:] = dt * romRhs
 
     yhat[:] = yhat + k2*half + k1*half
-    time += dt
+    evalTime += dt
 
 # --------------------------------
 # RK4
@@ -64,7 +62,7 @@ def odrom_rk4(odProblem, yhat, nSteps, dt, observer=None):
   two  = 2.
   oneOverSix = 1./6.
 
-  time = 0.
+  evalTime = 0.
   for step in range(1, nSteps+1):
     if checknan_and_print_step_status_if_needed(step, nSteps, yhat):
       break
@@ -74,34 +72,34 @@ def odrom_rk4(odProblem, yhat, nSteps, dt, observer=None):
 
     # step 1
     odProblem.reconstructFomState(yhat)
-    odProblem.computeFomVelocity(time)
+    odProblem.computeFomVelocity(evalTime)
     odProblem.projectFomVelo(romRhs)
     k1[:] = dt * romRhs
 
     # step 2
     yhat0 = yhat + half*k1
     odProblem.reconstructFomState(yhat0)
-    odProblem.computeFomVelocity(time+half*dt)
+    odProblem.computeFomVelocity(evalTime+half*dt)
     odProblem.projectFomVelo(romRhs)
     k2[:] = dt * romRhs
 
     # step 3
     yhat0 = yhat + half*k2
     odProblem.reconstructFomState(yhat0)
-    odProblem.computeFomVelocity(time+half*dt)
+    odProblem.computeFomVelocity(evalTime+half*dt)
     odProblem.projectFomVelo(romRhs)
     k3[:] = dt * romRhs
 
     # step 4
     yhat0 = yhat + k3
     odProblem.reconstructFomState(yhat0)
-    odProblem.computeFomVelocity(time+dt)
+    odProblem.computeFomVelocity(evalTime+dt)
     odProblem.projectFomVelo(romRhs)
     k4[:] = dt * romRhs
 
     yhat[:] = yhat + (k1+two*k2+two*k3+k4)*oneOverSix
 
-    time += dt
+    evalTime += dt
 
 # --------------------------------
 # SSPRK3
@@ -117,7 +115,7 @@ def odrom_ssprk3(odProblem, yhat, nSteps, dt, observer=None):
   oneOverFour   = 1./4.
   threeOverFour = 3./4.
 
-  time = 0.
+  evalTime = 0.
   for step in range(1, nSteps+1):
     if checknan_and_print_step_status_if_needed(step, nSteps, yhat):
       break
@@ -126,18 +124,18 @@ def odrom_ssprk3(odProblem, yhat, nSteps, dt, observer=None):
       observer(step-1, yhat)
 
     odProblem.reconstructFomState(yhat)
-    odProblem.computeFomVelocity(time)
+    odProblem.computeFomVelocity(evalTime)
     odProblem.projectFomVelo(romRhs)
     yhat0[:] = yhat + dt * romRhs
 
     odProblem.reconstructFomState(yhat0)
-    odProblem.computeFomVelocity(time+dt)
+    odProblem.computeFomVelocity(evalTime+dt)
     odProblem.projectFomVelo(romRhs)
     yhat1[:] = threeOverFour*yhat + oneOverFour*yhat0 + oneOverFour*dt*romRhs
 
     odProblem.reconstructFomState(yhat1)
-    odProblem.computeFomVelocity(time+0.5*dt)
+    odProblem.computeFomVelocity(evalTime+0.5*dt)
     odProblem.projectFomVelo(romRhs)
     yhat[:] = oneOverThree*(yhat + two*yhat1 + two*dt*romRhs)
 
-    time += dt
+    evalTime += dt

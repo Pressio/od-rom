@@ -4,36 +4,13 @@ from scipy import linalg
 from myio import load_basis_from_binary_file
 import time, math
 
-def make_bases_on_stenci_mesh(partInfoDir, tileId, sampleMeshPath, podDir,\
-                              numModes, numDofsPerCell):
-
-   # need to store the bases on stencil mesh
-   # so first, load on bases full local mesh
-   phiFile = podDir + "/lsv_state_p_" + str(tileId)
-   myPhi   = load_basis_from_binary_file(phiFile)[:,0:numModes]
-
-   # load indices such that we can extract phi on stencil mesh
-   myCellGids   = np.loadtxt(partInfoDir + "/cell_gids_wrt_full_mesh_p_"+str(tileId)+".txt",dtype=int)
-   myStMeshGids = np.loadtxt(sampleMeshPath + "/stencil_mesh_gids_p_"+str(tileId)+".dat", dtype=int)
-   myStCount    = len(myStMeshGids)
-
-   commonElem  = set(myStMeshGids).intersection(myCellGids)
-   commonElem  = np.sort(list(commonElem))
-   mylocalinds = np.searchsorted(myCellGids, commonElem)
-   mySlicedPhi = np.zeros((myStCount*numDofsPerCell, numModes), order='F')
-   for j in range(numDofsPerCell):
-     mySlicedPhi[j::numDofsPerCell, :] = myPhi[numDofsPerCell*mylocalinds + j, :]
-
-   return mySlicedPhi
-
-
 class OdRomGappy:
   def __init__(self,
                # fomObj operates on a reduced mesh
                # because this is odrom with real smaple mesh
                fomObj, physDim, numDofsPerCell, \
                partInfoDir, modesDicIn, sampleMeshPath,\
-               podDir, projectorDir, \
+               fullPodDir, projectorDir, phiOnStencilDir, \
                refStateFullMeshOrdering, refStateForOdRomAlgo,\
                fullMeshTotalDofs):
 
@@ -63,13 +40,11 @@ class OdRomGappy:
       myK   = self.modesDic_[tileId]
 
       # phi on full mesh
-      phiFile = podDir + "/lsv_state_p_" + str(tileId)
+      phiFile = fullPodDir + "/lsv_state_p_" + str(tileId)
       self.phisOnFullMesh_[tileId] = load_basis_from_binary_file(phiFile)[:,0:myK]
 
       # phi on stencil mesh
-      self.phis_[tileId] = make_bases_on_stenci_mesh(partInfoDir, tileId, \
-                                                     sampleMeshPath, podDir,\
-                                                     myK, numDofsPerCell)
+      self.phis_[tileId] = np.loadtxt(phiOnStencilDir+'/phi_on_stencil_p_'+str(tileId)+'.txt')
 
       # projectors
       self.projs_[tileId] = np.loadtxt(projectorDir+'/projector_p_'+str(tileId)+'.txt')
@@ -127,7 +102,7 @@ class OdRomGappy:
       myK   = self.modesDic_[tileId]
       myPhi = self.phis_[tileId]
       myRomStateSlice = romStateIn[romState_i:romState_i+myK]
-      tmpy  = np.dot(myPhi, myRomStateSlice)
+      tmpy = np.dot(myPhi, myRomStateSlice)
       self.fomStateStencilMesh_[fomState_i:fomState_i+len(tmpy)] = np.copy(tmpy)
       romState_i += myK
       fomState_i += len(tmpy)

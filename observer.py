@@ -37,7 +37,7 @@ class RomObserver:
 
     totNumModes = np.sum(list(modesPerTile.values()))
     totalStateSnaps = int(numSteps/samplingFreqState)
-    self.sM_ = np.zeros((totalStateSnaps, totNumModes), order='F')
+    self.sM_ = np.zeros((totalStateSnaps, totNumModes), order='C')
 
   def __call__(self, step, romState):
     if step % self.f_ == 0:

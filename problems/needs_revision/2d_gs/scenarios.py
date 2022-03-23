@@ -1,43 +1,23 @@
 import numpy as np
 
-base_dic              = {}
-train_points          = {}
-test_points           = {}
-
-# True/False to set initial condition as ref state
-odrom_use_ic_reference_state = {}
-
-odrom_algos           = {}
-odrom_partitioning_topol = {}
-odrom_partitioning_style = {}
-
-odrom_energies        = {}
-odrom_basis_sets      = {}
-odrom_sample_meshes   = {}
-odrom_poly_order      = {}
-
-################################
+from problems.dictionaries import *
 
 base_dic[1] = {
-  'general' : {
-    'problem': "2d_gs",
-    'meshDir': "tbd"
-  },
-
   'fom' : {
+    'meshSize': [200, 200],
     'finalTimeTrain': 1000.,
     'finalTimeTest' : 1000.,
     'odeScheme': "RK4",
     'dt' : 0.2,
-    'stateSamplingFreq' : 4,
-    'velocitySamplingFreq' : 100
+    'stateSamplingFreq' : 5,
+    'velocitySamplingFreq' : 5
   },
 
   'odrom' : {
     'finalTime': 1000.0,
     'odeScheme': "RK4",
     'dt' : 0.4,
-    'stateSamplingFreq' : 4
+    'stateSamplingFreq' : 5
   },
 
   'physicalCoefficients' : {
@@ -48,43 +28,36 @@ base_dic[1] = {
   }
 }
 
-train_points[1] = {
-  0: 0.060,
-  1: 0.065,
-  2: 0.070,
-}
+train_points[1] = { 0: 0.060, 1: 0.065, 2: 0.070 }
 
 test_points[1]  = {
   0: 0.0625,
-  1: 0.0725,
-  2: 0.0750,
-  3: 0.055,
-  4: 0.068
+  1: 0.068,
+  2: 0.072
 }
 
-odrom_use_ic_reference_state[1] = False
+basis_sets[1] = { 0: [0,1,2] }
 
-odrom_algos[1]        = ["GalerkinFull", "PolyGalerkinFull"]
-odrom_energies[1]     = [99.9999, 99.999995, 99.99999999]
-odrom_basis_sets[1]   = {
-  0: [0,1,2]
+use_ic_reference_state[1] = True
+
+algos[1] = ["PodOdGalerkinFull", "PodOdGalerkinGappy", "PodStandardGalerkinFull"]
+
+standardrom_energies[1] = [99.99999, 99.99999999]
+odrom_energies[1]       = [99.9999, 99.9999999, 99.999999999]
+
+odrom_partitions[1] = {
+  #'concentricUniform'  : [3, 5, 8],
+  'rectangularUniform' : [[5,5], [10,10], [20,20]],
 }
 
-# -1: compute orders of the poly bases to match pod modes and truncate to have a full poly order
-# int>0: we use same poly order in each tile
-odrom_poly_order[1]   = [-1]#, 1, 2, 4, 6]
-
-odrom_partitioning_topol[1] = [[1,1], [5,5], [10,10], [20,20]]
-odrom_partitioning_style[1] = ['uniform']
-
+sample_meshes[1] = [["psampling", 0.2, 0],
+                    ["psampling", 0.2, 1]]
 
 #----------------------------------------------
+#----------------------------------------------
+
 
 base_dic[2] = {
-  'general' : {
-    'problem': "2d_gs",
-  },
-
   'fom' : {
     'meshSize': [200, 200],
     'finalTimeTrain': 1000.,
@@ -118,18 +91,22 @@ train_points[2] = {
 
 test_points[2]  = {
   0: 0.04,
-  #1: 0.06,
-  #2: 0.075,
-  #3: 0.025
+  1: 0.06,
+  2: 0.075,
+  3: 0.025
 }
 
-odrom_use_ic_reference_state[2] = True
+basis_sets[2]   = { 0: [0,1,2] }
 
-odrom_algos[2]        = ["PodGalerkinGappy"]
-odrom_energies[2]     = [99.999999999]
-odrom_basis_sets[2]   = { 0: [0,1,2] }
+use_ic_reference_state[2] = True
 
-odrom_partitioning_topol[2] = [[5,5]]
-odrom_partitioning_style[2] = ['uniform']
+algos[2] = ["PodOdGalerkinFull", "PodOdGalerkinGappy"]
 
-odrom_sample_meshes[2] = [["psampling", 0.05, 0]]
+standardrom_energies[2] = [99.9999999, 99.999999999]
+odrom_energies[2] = [99.9999999]
+
+odrom_partitions[2] = {
+  'concentricUniform' : [10]
+}
+
+sample_meshes[2] = [["psampling", 0.25, 1]]

@@ -40,7 +40,10 @@ def create_problem_for_scenario(scenario, meshObj, coeffDic, dicIn, val):
   if scenario == 1:
     pulsespread = val
   elif scenario == 2:
-    pulsespread = val
+    pulsemag = val
+  elif scenario == 3:
+    pulsemag    = val[0]
+    pulsespread = val[1]
   else:
     sys.exit("invalid scenario {} for 2d_burgers".format(scenario))
 

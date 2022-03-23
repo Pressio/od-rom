@@ -164,8 +164,8 @@ if __name__ == '__main__':
 
     blockSizes, cellGidsDic, stateDofsGidsDic = _create1d_new(nx, xSplits, ndpc)
 
-    np.savetxt(workDir+"/topo.txt", \
-               np.array([nTilesX, 1]), fmt='%8d')
+    np.savetxt(workDir+"/ntiles.txt", \
+               np.array([nTilesX]), fmt='%8d')
 
     for k in range(totTiles):
       np.savetxt(workDir+"/block_size_p_"+str(k)+".txt", \
@@ -197,8 +197,8 @@ if __name__ == '__main__':
                                                               xSplits, ySplits, \
                                                               ndpc)
 
-    np.savetxt(workDir+"/topo.txt", \
-               np.array([nTilesX, nTilesY]), fmt='%8d')
+    np.savetxt(workDir+"/ntiles.txt", \
+               np.array([nTilesX*nTilesY]), fmt='%8d')
 
     for k in range(totTiles):
       np.savetxt(workDir+"/block_size_p_"+str(k)+".txt", \

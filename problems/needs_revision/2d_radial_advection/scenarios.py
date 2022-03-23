@@ -1,7 +1,7 @@
 
 import numpy as np
 
-from dictionaries import *
+from problems.dictionaries import *
 
 base_dic[1] = {
   'fom' : {
@@ -19,7 +19,7 @@ base_dic[1] = {
     'finalTime': 4.5,
     'inviscidFluxReconstruction' : "FirstOrder",
     'odeScheme': "RK4",
-    'dt' : 0.02,
+    'dt' : 0.01,
     'stateSamplingFreq' : 1
   },
 
@@ -38,16 +38,17 @@ test_points[1]  = {
   1: 1.6
 }
 
-odrom_use_ic_reference_state[1] = False
+use_ic_reference_state[1] = True
 
-odrom_algos[1]      = ["PodGalerkinGappy", "PodGalerkinFull"]
+algos[1] = ["PodOdGalerkinGappy"]
 
-odrom_energies[1]     = [99.999999999]
-odrom_basis_sets[1]   = {
+odrom_energies[1]     = [99.9999999, 99.999999999, 99.999999999]
+basis_sets[1]   = {
   0: [0,1]
 }
 
-odrom_partitioning_topol[1] = [[1,1]]
-odrom_partitioning_style[1] = ['uniform']
+odrom_partitions[1] = {
+  'concentricUniform' : [3,5]
+}
 
-odrom_sample_meshes[1] = [["random", 0.2, 0]]
+sample_meshes[1] = [["psampling", 0.5, 0]]
