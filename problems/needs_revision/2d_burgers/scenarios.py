@@ -9,24 +9,24 @@ predict in param only
 base_dic[1] = {
 
   'fom' : {
-    'meshSize': [250, 250],
-    'finalTimeTrain': 5.,
-    'finalTimeTest' : 5.,
+    'meshSize': [150, 150],
+    'finalTimeTrain': 10.,
+    'finalTimeTest' : 10.,
     'inviscidFluxReconstruction' : "Weno5",
     'odeScheme': "RK4",
     'dt' : 0.0025,
-    'stateSamplingFreqTrain' : 1000,
-    'velocitySamplingFreq'   : 1000
+    'stateSamplingFreqTrain' : 4,
+    'velocitySamplingFreq'   : 4
   },
 
   'odrom' : {
-    'finalTime': 5.,
+    'finalTime': 8.,
     'inviscidFluxReconstruction' : "Weno5",
     'odeScheme': "RK4",
     'dt' : 0.0025
   },
 
-  'stateSamplingFreqTest' : 1000,
+  'stateSamplingFreqTest' : 800,
 
   'physicalCoefficients' : {
     'pulsemag'    : 0.5,
@@ -38,31 +38,30 @@ base_dic[1] = {
 
 train_points[1] = {
   0: 0.2,
-  1: 0.3,
-  2: 0.4
+  1: 0.3
+  #2: 0.4
 }
 
 test_points[1]  = {
   0: 0.15,
-  # 1: 0.20,
-  2: 0.35,
-  3: 0.50,
-  # 4: 1.00
+  # 1: 0.25,
+  # 2: 0.35,
+  # 3: 0.45
 }
 
 use_ic_reference_state[1] = True
 
-basis_sets[1] = { 0: [0,1,2] }
+basis_sets[1] = { 0: [0,1] }
 
-#algos[1] = ["PodStandardGalerkinFull"]
 algos[1] = ["PodOdGalerkinGappy", "PodOdGalerkinFull"]
 
 standardrom_energies[1] = [1.]
-odrom_energies[1] = [99.9993]
+odrom_energies[1] = [99.999, 99.9999]
 
-odrom_partitions[1] = { 'rectangularUniform' : [[10,10]] }
+odrom_partitions[1] = { 'rectangularUniform' : [[5,5], [12,12]] }
 
-sample_meshes[1] = [["psampling", 0.5, 0]]
+sample_meshes[1] = [["psampling", 0.2, 0]]
+
 
 
 '''
@@ -123,64 +122,63 @@ odrom_partitions[2] = { 'rectangularUniform' : [[8,8], [10,10]] }
 sample_meshes[2] = [["psampling", 0.5, 0], ["psampling", 0.20, 0]]
 
 
-
 '''
 '''
 base_dic[3] = {
 
   'fom' : {
-    'meshSize': [300, 300],
+    'meshSize': [400, 400],
     'finalTimeTrain': 5.,
     'finalTimeTest' : 5.,
     'inviscidFluxReconstruction' : "Weno5",
     'odeScheme': "RK4",
-    'dt' : 0.0025,
-    'stateSamplingFreqTrain' : 2,
-    'velocitySamplingFreq'   : 2
+    'dt' : 0.0010,
+    'stateSamplingFreqTrain' : 4,
+    'velocitySamplingFreq'   : 4
   },
 
   'odrom' : {
     'finalTime': 5.,
     'inviscidFluxReconstruction' : "Weno5",
     'odeScheme': "RK4",
-    'dt' : 0.005
+    'dt' : 0.0025
   },
 
-  'stateSamplingFreqTest' : 5,
+  'stateSamplingFreqTest' : 500,
 
   'physicalCoefficients' : {
     'pulsemag'    : "tbd",
     'pulsespread' : "tbd",
-    'diffusion'   : 0.0001,
+    'diffusion'   : 0.0005,
     "pulsecenter" : [-0.15, -0.3]
   }
 }
 
 train_points[3] = {
   #  mag spread
-  0: [0.3, 0.2],
-  1: [0.5, 0.2],
-  2: [0.3, 0.3],
-  3: [0.5, 0.3]
+  0: [0.5,  0.2],
+  1: [0.5,  0.5],
+  # 2: [0.5,  0.7],
+  # 3: [0.8,  0.7],
+  # 4: [0.65, 0.5]
 }
 
-test_points[3]  = {
-  0: [0.25, 0.25],
-  #1: [0.40, 0.25],
-  #2: [0.55, 0.25],
-  #3: [0.40, 0.35]
-}
+test_points[3]  = { 0: [0.5, 0.8] }
 
 use_ic_reference_state[3] = True
+basis_sets[3] = { 0: [0,1] }
 
-basis_sets[3] = { 0: [0,1,2,3] }
-
-#algos[3] = ["PodOdGalerkinGappy", "PodOdGalerkinFull", "PodStandardGalerkinFull"]
 algos[3] = ["PodOdGalerkinGappy"]
 
 standardrom_energies[3] = [1.]
-odrom_energies[3] = [1] #99.9993]
+odrom_energies[3] = [99.999, 99.9999]
 
-odrom_partitions[3] = { 'rectangularUniform' : [[10,10]] }
+odrom_partitions[3] = { 'rectangularUniform' : [[8,8], [12,12], [16,16]] }
 
-sample_meshes[3] = [["psampling", 0.5, 0]]
+'''
+sample meshed worked using this to compute gappy projector:
+  K = compute_cumulative_energy(rhsSingVals, 99.9999)
+  if mySmCount*numDofsPerCell < K: K = mySmCount*numDofsPerCell - 1
+  if K < myNumModes: K = myNumModes + 1
+'''
+sample_meshes[3] = [["psampling", 0.2, 0], ["psampling", 0.1, 0]]

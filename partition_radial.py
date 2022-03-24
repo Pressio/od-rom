@@ -116,7 +116,7 @@ if __name__ == '__main__':
     # https://math.stackexchange.com/questions/270287/how-to-divide-a-circle-into-9-rings-1-inner-circle-with-the-same-area
     ri = maxRadius * np.sqrt(float(i)/args.tiles)
     rs.append(ri)
-    cellGidsDic[i-1] = np.where((np.sqrt(x**2 + y**2) > rs[i-1]) & (np.sqrt(x**2 + y**2) < ri))[0]
+    cellGidsDic[i-1] = np.where((np.sqrt(x**2 + y**2) >= rs[i-1]) & (np.sqrt(x**2 + y**2) < ri))[0]
   cellGidsDic[args.tiles-1] = np.where(np.sqrt(x**2 + y**2) > rs[-1])[0]
 
   # rs = np.linspace(0.0, maxRadius, args.tiles).tolist()

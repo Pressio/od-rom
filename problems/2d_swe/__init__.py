@@ -1,4 +1,5 @@
 
+import sys
 import pressiodemoapps as pda
 from .scenarios import *
 
@@ -38,13 +39,15 @@ def create_problem_for_scenario(scenario, meshObj, coeffDic, dicIn, val):
   gravity  = coeffDic['gravity']
   coriolis = coeffDic['coriolis']
   pulse    = coeffDic['pulsemag']
-  # change if something needs to be changed
+
   if scenario == 1:
     coriolis = val
   elif scenario == 2:
     coriolis = val
+  elif scenario == 3:
+    coriolis = val
   else:
-    sys.exit("invalid scenario {} for 2d_swe".format(scenario))
+    sys.exit("__init__: invalid scenario {} for 2d_swe".format(scenario))
 
   # store
   dicIn['gravity']  = gravity

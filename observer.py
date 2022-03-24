@@ -1,5 +1,6 @@
 
 import numpy as np
+import sys
 from myio import write_matrix_to_bin_omit_shape
 
 # -------------------------------------------------------------------
@@ -34,6 +35,9 @@ class RomObserver:
   def __init__(self, samplingFreqState, numSteps, modesPerTile):
     self.f_     = int(samplingFreqState)
     self.count_ = int(0)
+
+    if numSteps % samplingFreqState !=0:
+      sys.exit("RomObserver: numSteps not divisible by samplingFreqState")
 
     totNumModes = np.sum(list(modesPerTile.values()))
     totalStateSnaps = int(numSteps/samplingFreqState)

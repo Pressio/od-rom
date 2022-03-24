@@ -21,6 +21,9 @@ pressio::ode::StepScheme string_to_ode_scheme(const std::string & schemeString)
   else if (schemeString == "RungeKutta4"){
     return pressio::ode::StepScheme::RungeKutta4;
   }
+  else if (schemeString == "RK4"){
+    return pressio::ode::StepScheme::RungeKutta4;
+  }
   else if (schemeString == "SSPRungeKutta3"){
     return pressio::ode::StepScheme::SSPRungeKutta3;
   }
@@ -69,6 +72,9 @@ int main(int argc, char *argv[])
 {
   const std::string inputFile = argv[1];
   auto node = YAML::LoadFile(inputFile);
+  int nth   = std::atoi(argv[2]);
+  int loops = std::atoi(argv[3]);
+  std::cout << nth << " " << loops << '\n';
 
   const auto meshDir = node["meshDir"].as<std::string>();
   const auto meshObj = pda::load_cellcentered_uniform_mesh_eigen(meshDir);
@@ -82,6 +88,7 @@ int main(int argc, char *argv[])
   auto appObj = pda::create_burgers_2d_problem_eigen(meshObj, inviscidSchemeE, viscSchemeE,
 						     pulseMag, pulseSpread, diffusion,
 						     -0.15, -0.3);
+  appObj.setNumThreads(nth);
   using app_t = decltype(appObj);
 
   const auto startTime = static_cast<double>(0);
@@ -94,21 +101,32 @@ int main(int argc, char *argv[])
   StateObserver<typename app_t::state_type> stateObs("fom_snaps_state", stateSamplingFreq);
   VelocityObserver<> veloObs("fom_snaps_rhs", veloSamplingFreq);
 
-  auto state = appObj.initialCondition();
-  write_vector_to_ascii_file("initial_state.txt", state);
+  {
+    auto state = appObj.initialCondition();
+    auto veloc = appObj.createVelocity();
+    auto t1 = std::chrono::high_resolution_clock::now();
+    for (int i=0; i<loops; ++i){
+      appObj.velocity(state, 0., veloc);
+    }
+    auto t2 = std::chrono::high_resolution_clock::now();
+    std::chrono::duration< double > fs = t2 - t1;
+    std::cout << "elapsed " << fs.count() << '\n';
+    std::cout << "one-velo " << fs.count()/(double) loops << std::endl;
+  }
 
-  const auto odeSchemeE = string_to_ode_scheme( node["odeScheme"].as<std::string>() );
-  auto stepperObj = pode::create_explicit_stepper(odeSchemeE, state, appObj);
-
-  auto t1 = std::chrono::high_resolution_clock::now();
-  pode::advance_n_steps_and_observe(stepperObj, state, startTime,
-				    dt, numSteps, stateObs, veloObs);
-  auto t2 = std::chrono::high_resolution_clock::now();
-  std::chrono::duration< double > fs = t2 - t1;
-  std::cout << "elapsed " << fs.count() << '\n';
-  std::cout << "one-step " << fs.count()/(double) numSteps << std::endl;
-
-  write_vector_to_ascii_file("final_state.txt", state);
+// #if 0
+//   write_vector_to_ascii_file("initial_state.txt", state);
+//   const auto odeSchemeE = string_to_ode_scheme( node["odeScheme"].as<std::string>() );
+//   auto stepperObj = pode::create_explicit_stepper(odeSchemeE, state, appObj);
+//   auto t1 = std::chrono::high_resolution_clock::now();
+//   pode::advance_n_steps_and_observe(stepperObj, state, startTime,
+// 				    dt, numSteps, stateObs, veloObs);
+//   auto t2 = std::chrono::high_resolution_clock::now();
+//   std::chrono::duration< double > fs = t2 - t1;
+//   std::cout << "elapsed " << fs.count() << '\n';
+//   std::cout << "one-step " << fs.count()/(double) numSteps << std::endl;
+//   write_vector_to_ascii_file("final_state.txt", state);
+// #endif
 
   return 0;
 }

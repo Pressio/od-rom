@@ -1,7 +1,7 @@
 
 import numpy as np
 from scipy import linalg
-import time, math
+import time, math, sys
 
 def checknan_and_print_step_status_if_needed(step, nSteps, romState):
   if step % 10 == 0:
@@ -98,7 +98,6 @@ def odrom_rk4(odProblem, yhat, nSteps, dt, observer=None):
     k4[:] = dt * romRhs
 
     yhat[:] = yhat + (k1+two*k2+two*k3+k4)*oneOverSix
-
     evalTime += dt
 
 # --------------------------------

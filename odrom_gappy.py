@@ -81,8 +81,8 @@ class OdRomGappy:
       self.fomStateFullMesh_ += self.refStateFullMeshOrdering_
 
   # -------------------------------------------------------------------
-  def projectFomVelo(self, romState):
-    romState_i = 0
+  def projectFomVelo(self, romRhs):
+    romRhs_i = 0
     fomVelo_i = 0
     for tileId in range(self.nTiles_):
       myK = self.modesDic_[tileId]
@@ -90,8 +90,8 @@ class OdRomGappy:
       n = myProjector.shape[0]
       myRhsSlice = self.fomVelo_[fomVelo_i:fomVelo_i+n]
       yhattmp    = np.dot(myProjector.T, myRhsSlice)
-      romState[romState_i:romState_i+myK] = np.copy(yhattmp)
-      romState_i += myK
+      romRhs[romRhs_i:romRhs_i+myK] = np.copy(yhattmp)
+      romRhs_i += myK
       fomVelo_i += n
 
   # -------------------------------------------------------------------
