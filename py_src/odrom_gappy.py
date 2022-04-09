@@ -1,8 +1,8 @@
 
 import numpy as np
 from scipy import linalg
-from myio import load_basis_from_binary_file
 import time, math
+from .myio import load_basis_from_binary_file
 
 class OdRomGappy:
   def __init__(self,

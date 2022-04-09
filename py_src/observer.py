@@ -1,7 +1,7 @@
 
 import numpy as np
 import sys
-from myio import write_matrix_to_bin_omit_shape
+from .myio import write_matrix_to_bin_omit_shape
 
 # -------------------------------------------------------------------
 class FomObserver:

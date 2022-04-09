@@ -1,6 +1,52 @@
 
 import numpy as np
-from problems.dictionaries import *
+from py_problems.dictionaries import *
+
+'''
+scenario -1 is playground, nothing to explain here
+'''
+base_dic[-1] = {
+  'fom' : {
+    'meshSize': [256, 256],
+    'finalTimeTrain': 8.0,
+    'finalTimeTest' : 8.0,
+    'inviscidFluxReconstruction' : "Weno5",
+    'odeScheme': "RK4",
+    'dt' : 0.0025,
+    'stateSamplingFreqTrain': 5,
+    'velocitySamplingFreq'  : 5
+  },
+  'stateSamplingFreqTest' : 400,
+  'odrom' : {
+    'finalTime': 8.0,
+    'inviscidFluxReconstruction' : "Weno5",
+    'odeScheme': "RK4",
+    'dt' : 0.005
+  },
+  'physicalCoefficients' : {
+    'gravity': 9.8, 'coriolis':"tbd", 'pulsemag': 0.125
+  }
+}
+
+train_points[-1] = { 0: -3.0}
+test_points[-1]  = train_points[-1]
+use_ic_reference_state[-1] = True
+basis_sets[-1] = { 0: [0]}
+algos[-1] = ["PodStandardGalerkinFull", \
+             "PodStandardGalerkinGappy", \
+             "PodOdGalerkinFull", \
+             "PodOdGalerkinGappy"]
+
+# "PodOdGalerkinFull", "PodOdProjectionError", ]
+standardrom_modes_setting_policies[-1] = {'userDefinedValue' : [20]}
+
+odrom_modes_setting_policies[-1] = { 'allTilesUseTheSameUserDefinedValue' : [20]}
+odrom_min_num_modes_per_tile[-1] = 5
+odrom_partitions[-1] = {'rectangularUniform' : [[7,7]]}
+sample_meshes[-1] = [["psampling", 0.5, 0]]
+
+
+
 
 '''
 reproductive case but with a twist

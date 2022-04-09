@@ -2,7 +2,7 @@
 import time, math
 import numpy as np
 from scipy import linalg
-from myio import load_basis_from_binary_file
+from .myio import load_basis_from_binary_file
 
 class StandardRomFull:
   def __init__(self, \
