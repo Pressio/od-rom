@@ -37,68 +37,81 @@ def color_resetter():
   return "\033[0;0m"
 
 def print_separator():
-  print("\033[1;30;47m-------------------------------------------------")
+  print("\033[1;30;47m" + "-"*45 + color_resetter())
 
-def print_separator_with_resetter():
-  print("\033[1;30;47m-------------------------------------------------" + \
-        color_resetter())
+def banner_driving_script_info(stringToPrint):
+  sl = len(stringToPrint)
+  tsz = 75 #int(os.get_terminal_size().columns/2)
+  estr = " "*int(tsz)
+  print("")
+  print("\033[1;35;42m" + estr + color_resetter())
+  print("\033[1;37;42m " + stringToPrint.upper() + " "*(tsz-sl-1) + color_resetter())
+  print("\033[1;35;42m" + estr + color_resetter())
 
 def banner_import_problem():
-  print_separator()
-  print("\033[1;30;47m    Importing problem module                     ")
-  print_separator_with_resetter()
+  print("\033[1;30;47mImporting problem module                     " \
+        + color_resetter())
 
 def banner_compute_full_pod():
-  print_separator()
-  print("\033[1;30;47m    Compute FULL domain POD                      ")
-  print_separator_with_resetter()
+  print("\033[1;30;47mCompute FULL domain POD                      " \
+        + color_resetter())
 
 def banner_make_fom_mesh():
-  print_separator()
-  print("\033[1;30;47m    Make FOM mesh                                ")
-  print_separator_with_resetter()
+  print("\033[1;30;47mMake FOM mesh                                " \
+        + color_resetter())
 
 def banner_fom_train():
-  print_separator()
-  print("\033[1;30;47m    FOM Train runs                               ")
-  print_separator_with_resetter()
+  print("\033[1;30;47mFOM Train runs                               " \
+        + color_resetter())
 
 def banner_fom_test():
-  print_separator()
-  print("\033[1;30;47m    FOM Test runs                                ")
-  print_separator_with_resetter()
+  print("\033[1;30;47mFOM Test runs                                " \
+        + color_resetter())
 
 def banner_sample_mesh_full_domain():
-  print_separator()
-  print("\033[1;30;47m    Make sample mesh for FULL domain             ")
-  print_separator_with_resetter()
+  print("\033[1;30;47mMake sample mesh for full domain             " \
+        + color_resetter())
 
 def banner_pod_standard_galerkin():
-  print_separator()
-  print("\033[1;30;47m    Running pod standard-galerkin on FULL domain ")
-  print_separator_with_resetter()
+  print("\033[1;30;47mRun pod standard-galerkin on full domain     " \
+        + color_resetter())
 
 def banner_make_partitions():
-  print_separator()
-  print("\033[1;30;47m    Partitioning domain                          ")
-  print_separator_with_resetter()
+  print("\033[1;30;47mPartitioning domain                          " \
+        + color_resetter())
 
 def banner_compute_pod_all_partitions():
-  print_separator()
-  print("\033[1;30;47m    Compute POD for all partitions               ")
-  print_separator_with_resetter()
+  print("\033[1;30;47mCompute POD for all partitions               " \
+        + color_resetter())
 
 def banner_make_sample_meshes_all_partitions():
-  print_separator()
-  print("\033[1;30;47m    Make sample mesh for all partitions          ")
-  print_separator_with_resetter()
+  print("\033[1;30;47mMake sample mesh for all partitions          " \
+        + color_resetter())
 
 def banner_make_full_meshes_with_partition_based_indexing():
-  print_separator()
-  print("\033[1;30;47m    Make full meshes based on partition indexing ")
-  print_separator_with_resetter()
+  print("\033[1;30;47mMake full meshes based on partition indexing " \
+        + color_resetter())
 
 def banner_run_pod_od_galerkin():
-  print_separator()
-  print("\033[1;30;47m    Run pod od Galerkin                          ")
-  print_separator_with_resetter()
+  print("\033[1;30;47mRun pod od Galerkin                          " \
+        + color_resetter())
+
+def banner_compute_od_projection_error():
+  print("\033[1;30;47mComputing pod od projection errors           " \
+        + color_resetter())
+
+def banner_compute_full_domain_projection_error():
+  print("\033[1;30;47mComputing full domain projection errors      " \
+        + color_resetter())
+
+def banner_run_pod_od_galerkin_gappy_real():
+  print("\033[1;30;47mRun pod od Galerkin gappy real               " \
+        + color_resetter())
+
+def banner_run_pod_od_galerkin_gappy_masked():
+  print("\033[1;30;47mRun pod od Galerkin gappy masked             " \
+        + color_resetter())
+
+def banner_run_pod_od_galerkin_quad_real():
+  print("\033[1;30;47mRun pod od Galerkin quad real                " \
+        + color_resetter())

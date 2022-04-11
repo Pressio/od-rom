@@ -1,32 +1,47 @@
 
 # standard modules
 from argparse import ArgumentParser
-import sys, os, importlib, pathlib, math
-import random, subprocess
-import matplotlib.pyplot as plt
-import re, os, time, yaml
+import sys, os, importlib, subprocess, pathlib
 import numpy as np
 from scipy import linalg as scipyla
-from decimal import Decimal
-from scipy import optimize as sciop
 
-# local imports
-from myio import *
+try:
+  import pressiodemoapps as pda
+except ImportError:
+  raise ImportError("Unable to import pressiodemoapps")
 
-def str2bool(v):
-  if isinstance(v, bool):
-    return v
-  if v.lower() in ('yes', 'true', 't', 'y', '1'):
-    return True
-  elif v.lower() in ('no', 'false', 'f', 'n', '0'):
-    return False
-  else:
-    raise argparse.ArgumentTypeError('Boolean value expected.')
+from py_src.banners_and_prints import *
+
+from py_src.miscellanea import \
+  get_run_id, \
+  find_all_partitions_info_dirs, \
+  make_modes_per_tile_dic_with_const_modes_count
+
+from py_src.myio import *
+
+from py_src.fom_run_dirs_detection import \
+  find_fom_test_dir_with_target_id
 
 # -------------------------------------------------------------------
-def get_run_id(runDir):
-  return int(runDir.split('_')[-1])
+def find_all_odrom_nohr_dirs(workDir):
+  myl = [workDir+'/'+d for d in os.listdir(workDir) \
+         if "odrom_full" in d]
+  myl = sorted(myl, key=get_run_id)
+  return myl
 
+# -------------------------------------------------------------------
+def find_partition_info_path_from_input_file(runDir):
+  with open(runDir+'/input.yaml') as file:
+    ifile = yaml.load(file, Loader=yaml.FullLoader)
+  return ifile["partioningInfo"]
+
+# -------------------------------------------------------------------
+def find_state_pod_modes_path_from_input_file(runDir):
+  with open(runDir+'/input.yaml') as file:
+    ifile = yaml.load(file, Loader=yaml.FullLoader)
+  return ifile["basesDir"]
+
+# -------------------------------------------------------------------
 def find_state_sampling_frequency_from_input_file(runDir):
   with open(runDir+'/input.yaml') as file:
     ifile = yaml.load(file, Loader=yaml.FullLoader)
@@ -43,6 +58,12 @@ def find_meshdir_from_input_file(runDir):
   with open(runDir+'/input.yaml') as file:
     ifile = yaml.load(file, Loader=yaml.FullLoader)
   return ifile["meshDir"]
+
+# -------------------------------------------------------------------
+def using_ic_as_reference_state(runDir):
+  with open(runDir+'/input.yaml') as file:
+    ifile = yaml.load(file, Loader=yaml.FullLoader)
+  return ifile["usingIcAsRefState"]
 
 # -------------------------------------------------------------------
 def find_dimensionality_from_info_file(workDir):
@@ -104,17 +125,30 @@ def compute_errors_for_odrom_nohr_dir(workDir, romDir):
   myRunId = get_run_id(romDir)
 
   # find the fom test dir that matches the id
-  fomTestDir = find_fom_test_dir_with_id(workDir, myRunId)
+  fomTestDir = find_fom_test_dir_with_target_id(workDir, myRunId)
   print(fomTestDir)
 
-  # load fom states
+  # load fom snapshots
   fomMeshDir     = find_meshdir_from_input_file(fomTestDir)
   fomTotCells    = find_total_cells_from_info_file(fomMeshDir)
   numDofsPerCell = find_numdofspercell_from_input_file(fomTestDir)
   totFomDofs     = fomTotCells*numDofsPerCell
-  fomStates = load_fom_state_snapshot_matrix([fomTestDir], totFomDofs, \
-                                             numDofsPerCell, False)
+  fomStates      = load_fom_state_snapshot_matrix([fomTestDir], totFomDofs, \
+                                                  numDofsPerCell, False)
   assert(fomStates.flags['F_CONTIGUOUS'])
+
+  # need to be careful because the rom and fom can have a different
+  # sampling frequency and different time step size.
+  # so we need to figure out what are the time collected by the fom
+  # and then the times collected by the rom and from that
+  # we can extract the right snapshot indices that we need to compare
+  # to compute the errors
+  fomSampFreq = find_state_sampling_frequency_from_input_file(fomTestDir)
+
+
+
+
+
 
   # ensure that the sampling frequency of the state
   # is the same in rom and fom runs
@@ -127,7 +161,6 @@ def compute_errors_for_odrom_nohr_dir(workDir, romDir):
   modesPerTile = np.loadtxt(romDir+"/modes_per_tile.txt", dtype=int)
   totalModes = np.sum(modesPerTile)
   numTiles = len(modesPerTile)
-  print("modesPerTile = {}".format(modesPerTile))
 
   # load rom states
   romStateSnaps = load_rom_state_snapshot_matrix(romDir, totalModes)
@@ -139,8 +172,8 @@ def compute_errors_for_odrom_nohr_dir(workDir, romDir):
   romState_i = 0
   for tileId in range(numTiles):
     myK = modesPerTile[tileId]
-    phiFile = podDir + "/lsv_state_p_" + str(tileId)
-    myPhi   = load_basis_from_binary_file(phiFile)[:,0:myK]
+    phiFile         = podDir + "/lsv_state_p_" + str(tileId)
+    myPhi           = load_basis_from_binary_file(phiFile)[:,0:myK]
     srVecFile       = partitioningInfo+"/state_vec_rows_wrt_full_mesh_p_"+str(tileId)+".txt"
     myFullStateRows = np.loadtxt(srVecFile, dtype=int)
 
@@ -163,80 +196,29 @@ def compute_errors_for_odrom_nohr_dir(workDir, romDir):
 
   compute_and_save_errors(romDir, fomStates, fomStateReconstructed)
 
+
 #==============================================================
 # main
 #==============================================================
 if __name__ == '__main__':
+  banner_driving_script_info(os.path.basename(__file__))
+
   parser   = ArgumentParser()
-  parser.add_argument("--wdir",    dest="workdir", required=True)
-  parser.add_argument("--fomdir",  dest="fomdir",  required=True)
-  parser.add_argument("--poddir",  dest="poddir",  required=True)
-  parser.add_argument("--infodir", dest="infodir",  required=True)
-  parser.add_argument("--userefstate", dest="userefstate", type=str2bool)
-  args    = parser.parse_args()
-  workDir = args.workdir
-  fomDir  = args.fomdir
-  podDir  = args.poddir
-  infoDir = args.infodir
-  useRefState = args.userefstate
+  parser.add_argument("--wdir", dest="workdir", required=True)
+  args     = parser.parse_args()
+  workDir  = args.workdir
 
-  # load fom states
-  fomMeshDir     = find_meshdir_from_input_file(fomDir)
-  fomTotCells    = find_total_cells_from_info_file(fomMeshDir)
-  numDofsPerCell = find_numdofspercell_from_input_file(fomDir)
-  totFomDofs     = fomTotCells*numDofsPerCell
-  fomStates      = load_fom_state_snapshot_matrix([fomDir], totFomDofs, \
-                                                  numDofsPerCell, False)
-  if useRefState:
-    refState = np.loadtxt(fomDir + "/initial_state.txt")
-  for j in range(fomStates.shape[1]):
-    fomStates[:,j] -= refState
-  assert(fomStates.flags['F_CONTIGUOUS'])
+  # make sure the workdir exists
+  if not os.path.exists(workDir):
+    sys.exit("Working dir {} does not exist, terminating".format(workDir))
 
-  # load num modes used for each partition
-  modesPerTile = np.loadtxt(workDir+"/modes_per_tile.txt", dtype=int)
-  totalModes = np.sum(modesPerTile)
-  numTiles = len(modesPerTile)
-  print("modesPerTile = {}".format(modesPerTile))
+  banner_import_problem()
+  scenario = read_scenario_from_dir(workDir)
+  problem  = read_problem_name_from_dir(workDir)
+  module   = importlib.import_module(problem)
+  check_and_print_problem_summary(problem, module)
+  print("")
 
-  # calculate
-  fomStatesReconstructed = np.zeros_like(fomStates, order='F')
-  romState_i = 0
-  for tileId in range(numTiles):
-    myK = modesPerTile[tileId]
-    phiFile = podDir + "/lsv_state_p_" + str(tileId)
-    myPhi   = load_basis_from_binary_file(phiFile)[:,0:myK]
-    srVecFile       = infoDir + "/state_vec_rows_wrt_full_mesh_p_"+str(tileId)+".txt"
-    myFullStateRows = np.loadtxt(srVecFile, dtype=int)
-
-    mySliceOfFomSnaps = fomStates[myFullStateRows, :]
-    tmpY   = np.dot(myPhi.transpose(), mySliceOfFomSnaps)
-    tmpRec = np.dot(myPhi, tmpY)
-
-    for j,it in enumerate(myFullStateRows):
-      fomStatesReconstructed[it, :] = tmpRec[j, :]
-
-    # update the index so that the span of the romState
-    # in the next tile is correct
-    romState_i += myK
-
-  # compute error at each time step
-  # each column in fomStates or approximation contains one step
-  numSteps = fomStates.shape[1]
-  errMat   = np.zeros((numSteps, 3))
-  error    = fomStates-fomStatesReconstructed
-  print(error.shape)
-
-  if useRefState:
-    # if using ref state, col 0 (i.e. init condi) is zero by definition
-    # so we cannot devide by zero
-    errMat[0, :] = 0.
-    errMat[1:, 0] = np.linalg.norm(error[:, 1:], axis=0)/np.linalg.norm(fomStates[:,1:], axis=0)
-    errMat[1:, 1] = np.linalg.norm(error[:, 1:], ord=1, axis=0)/np.linalg.norm(fomStates[:,1:], ord=1, axis=0)
-    errMat[1:, 2] = np.linalg.norm(error[:, 1:], ord=np.inf, axis=0)/np.linalg.norm(fomStates[:,1:], ord=np.inf, axis=0)
-  else:
-    errMat[:, 0] = np.linalg.norm(error, axis=0)/np.linalg.norm(fomStates, axis=0)
-    errMat[:, 1] = np.linalg.norm(error, ord=1, axis=0)/np.linalg.norm(fomStates, ord=1, axis=0)
-    errMat[:, 2] = np.linalg.norm(error, ord=np.inf, axis=0)/np.linalg.norm(fomStates, ord=np.inf, axis=0)
-
-  np.savetxt(workDir+"/errors_in_time.txt", errMat)
+  # find all odrom dirs without hyperreduction
+  for dirIt in find_all_odrom_nohr_dirs(args.workdir):
+    compute_errors_for_odrom_nohr_dir(args.workdir, dirIt)

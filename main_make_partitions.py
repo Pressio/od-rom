@@ -95,6 +95,8 @@ def make_concentric_uniform_partitions_2d(workDir, fullMeshPath, listOfTilings):
 # main
 #==============================================================
 if __name__ == '__main__':
+  banner_driving_script_info(os.path.basename(__file__))
+
   parser   = ArgumentParser()
   parser.add_argument("--wdir", dest="workdir", required=True)
   args     = parser.parse_args()
@@ -113,22 +115,22 @@ if __name__ == '__main__':
   check_and_print_problem_summary(problem, module)
   print("")
 
-  # before we move on, we need to ensure that in workDir
-  # there is a unique FULL mesh. This is because the mesh is specified
-  # via command line argument and must be unique for a scenario.
-  # If one wants to run for a different mesh, then they have to
-  # run this script again with a different working directory
-  fomMeshPath = find_full_mesh_and_ensure_unique(workDir)
-
-  # --------------------------------------
-  banner_make_partitions()
-  # --------------------------------------
-  triggers = ["PodOdGalerkinFull",   \
-              "PodOdGalerkinGappy",  \
-              "PodOdGalerkinQuad",   \
-              "PodOdGalerkinMasked", \
+  triggers = ["PodOdGalerkin", \
+              "PodOdProjectionError", \
+              "PodOdGalerkinGappy", \
+              "PodOdGalerkinGappyMasked", \
+              "PodOdGalerkinQuad", \
               "LegendreOdGalerkinFull"]
   if any(x in triggers for x in module.algos[scenario]):
+    banner_make_partitions()
+
+    # before we move on, we need to ensure that in workDir
+    # there is a unique FULL mesh. This is because the mesh is specified
+    # via command line argument and must be unique for a scenario.
+    # If one wants to run for a different mesh, then they have to
+    # run this script again with a different working directory
+    fomMeshPath = find_full_mesh_and_ensure_unique(workDir)
+
     for key, val in module.odrom_partitions[scenario].items():
       style, listOfTilings = key, val
 
@@ -144,5 +146,5 @@ if __name__ == '__main__':
          style == "concentricUniform":
         make_concentric_uniform_partitions_2d(workDir, fomMeshPath, listOfTilings)
   else:
-    print("skipping")
+    print("Nothing to do here")
   print("")

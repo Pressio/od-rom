@@ -164,21 +164,21 @@ def run_full_standard_galerkin_for_all_test_values(workDir, problem, \
       # reconstruct final state
       romObj.reconstructFomStateFullMeshOrdering(romState)
       np.savetxt(outDir+"/y_rec_final.txt", romObj.viewFomState())
-      print("")
+  print("")
 
 # -------------------------------------------------------------------
 def run_standard_pod_galerkin_full(workDir, problem, module, \
                                    scenario, fomMeshPath):
 
   # -------
-  # loop 2: over all POD computed from various sets of train runs
+  # loop: over all sets of train runs
   # ------
   howManySets = len(module.basis_sets[scenario].keys())
   for setId in range(howManySets):
     currPodDir = path_to_full_domain_state_pod_data_dir(workDir, setId)
 
     # -------
-    # loop 3: over all target energies
+    # loop: over all mode setting policies
     # ------
     if not hasattr(module, 'standardrom_modes_setting_policies'):
       sys.exit("for standard galerkin, you need standardrom_modes_setting_policies in the problem")
@@ -209,6 +209,8 @@ def run_standard_pod_galerkin_full(workDir, problem, module, \
 # main
 #==============================================================
 if __name__ == '__main__':
+  banner_driving_script_info(os.path.basename(__file__))
+
   parser   = ArgumentParser()
   parser.add_argument("--wdir", dest="workdir", required=True)
   args     = parser.parse_args()
@@ -227,18 +229,16 @@ if __name__ == '__main__':
   check_and_print_problem_summary(problem, module)
   print("")
 
-  # before we move on, we need to ensure that in workDir
-  # there is a unique FULL mesh. This is because the mesh is specified
-  # via command line argument and must be unique for a scenario.
-  # If one wants to run for a different mesh, then they have to
-  # run this script again with a different working directory
-  fomMeshPath = find_full_mesh_and_ensure_unique(workDir)
+  if "PodStandardGalerkin" in module.algos[scenario]:
 
-  # --------------------------------------
-  banner_pod_standard_galerkin()
-  # --------------------------------------
-  if "PodStandardGalerkinFull" in module.algos[scenario]:
+    # before we move on, we need to ensure that in workDir
+    # there is a unique FULL mesh. This is because the mesh is specified
+    # via command line argument and must be unique for a scenario.
+    # If one wants to run for a different mesh, then they have to
+    # run this script again with a different working directory
+    fomMeshPath = find_full_mesh_and_ensure_unique(workDir)
+
+    banner_pod_standard_galerkin()
     run_standard_pod_galerkin_full(workDir, problem, module, scenario, fomMeshPath)
   else:
-    print("skipping: " + stage)
-  print("")
+    print("Nothing to do here")

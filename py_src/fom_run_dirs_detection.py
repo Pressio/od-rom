@@ -22,3 +22,10 @@ def find_all_fom_train_dirs(workDir):
   testDirs = [workDir+'/'+d for d in os.listdir(workDir) \
                if "fom_train" in d]
   return testDirs
+
+# -------------------------------------------------------------------
+def find_fom_test_dir_with_target_id(workDir, targetid):
+  myl = [workDir+'/'+d for d in os.listdir(workDir) \
+                 if "fom_test" in d and get_run_id(d)==targetid]
+  assert(len(myl)==1)
+  return myl[0]

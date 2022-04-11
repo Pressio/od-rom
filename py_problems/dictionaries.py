@@ -12,13 +12,16 @@ algos = {}
 list of strings to set which algos to run
 
 choices:
-  PodStandardGalerkinFull
-  PodStandardGalerkinGappy
-  PodOdProjectionError
-  PodOdGalerkinFull
-  PodOdGalerkinGappy
-  PodOdGalerkinMasked
-  PodOdGalerkinQuad
+  PodStandardGalerkin        # standard galerkin
+  PodStandardGalerkinGappy   # gappy galerkin
+  PodStandardProjectionError # projection error full domain
+
+  PodOdProjectionError      # projection error for odrom
+  PodOdGalerkin             # od galerkin
+  PodOdGalerkinGappy        # od gappy galerkin with real HR
+  PodOdGalerkinGappyMasked  # od gappy galerkin via mask
+  PodOdGalerkinQuad         # od galerkin with quad projector
+
   LegendreOdGalerkinFull
 '''
 

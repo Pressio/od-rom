@@ -36,9 +36,9 @@ from py_src.directory_naming import \
 from py_src.mesh_info_file_extractors import *
 
 from py_src.make_od_rom_initial_condition import *
-from py_src.odrom_full import *
-from py_src.odrom_time_integrators import *
+from py_src.odrom_full_class import *
 from py_src.observer import RomObserver
+from py_src.odrom_time_integrators import *
 
 # -------------------------------------------------------------------
 def make_full_mesh_for_odrom_using_partition_based_indexing(workDir, pdaDir, \
@@ -207,7 +207,7 @@ def run_full_od_galerkin_for_all_test_values(workDir, problem, \
       # create observer
       stateSamplingFreq = int(module.base_dic[scenario]['stateSamplingFreqTest'])
       romRunDic['stateSamplingFreq'] = stateSamplingFreq
-      obsO = RomObserver(stateSamplingFreq, numSteps, modesPerTileDic)
+      obsO = RomObserver(stateSamplingFreq, numSteps, modesPerTileDic, dt)
 
       # write yaml to file
       inputFile = outDir + "/input.yaml"
@@ -220,6 +220,11 @@ def run_full_od_galerkin_for_all_test_values(workDir, problem, \
         odrom_rk4(odRomObj, romState, numSteps, dt, obsO)
       elif odeScheme in ["RungeKutta2", "RK2", "rk2"]:
         odrom_rk2(odRomObj, romState, numSteps, dt, obsO)
+
+      # because of how RomObserver and the time integration are done,
+      # we need to call it one time at the time to ensure
+      # we observe/store the final rom state
+      obsO(numSteps, romState)
 
       elapsed = time.time() - pTimeStart
       print("elapsed = {}".format(elapsed))
@@ -317,11 +322,12 @@ def run_od_pod_galerkin_full(workDir, problem, module, \
           sys.exit('run_od_pod_galerkin_full: invalid modeSettingPolicy = {}'.format(modeSettingIt_key))
 
 
-
 #==============================================================
 # main
 #==============================================================
 if __name__ == '__main__':
+  banner_driving_script_info(os.path.basename(__file__))
+
   parser   = ArgumentParser()
   parser.add_argument("--wdir", dest="workdir", required=True)
   parser.add_argument("--pdadir", dest="pdadir", required=True)
@@ -349,28 +355,26 @@ if __name__ == '__main__':
   # run this script again with a different working directory
   fomMeshPath = find_full_mesh_and_ensure_unique(workDir)
 
-  # --------------------------------------
-  banner_make_full_meshes_with_partition_based_indexing()
-  # --------------------------------------
-  # needed if we are doing PodOdGalerkinFull or LegendreOdGalerkinFull
-  # indeed, for od-rom without HR, for performance reasons,
-  # we don't/should not use the same full mesh used in the fom.
-  # We need to make a new full mesh with a new indexing
-  # that is consistent with the partitions and allows continguous storage
-  # of the state and rhs within each tile
-  if "PodOdGalerkinFull"   in module.algos[scenario] or \
-     "PolyOdGalerkinFully" in module.algos[scenario]:
-    make_full_mesh_for_odrom_using_partition_based_indexing(workDir, \
-                                                            pdaDir, \
-                                                            module, \
-                                                            fomMeshPath)
-  else:
-    print("skipping: " + stage)
-  print("")
+  if "PodOdGalerkin" in module.algos[scenario]:
+    banner_run_pod_od_galerkin()
 
-  # --------------------------------------
-  banner_run_pod_od_galerkin()
-  # --------------------------------------
-  if "PodOdGalerkinFull" in module.algos[scenario]:
+
+    # --------------------------------------
+    # needed if we are doing PodOdGalerkinFull or LegendreOdGalerkinFull
+    # indeed, for od-rom without HR, for performance reasons,
+    # we don't/should not use the same full mesh used in the fom.
+    # We need to make a new full mesh with a new indexing
+    # that is consistent with the partitions and allows continguous storage
+    # of the state and rhs within each tile
+    if "PodOdGalerkin"   in module.algos[scenario] or \
+       "PolyOdGalerkinFully" in module.algos[scenario]:
+      banner_make_full_meshes_with_partition_based_indexing()
+      make_full_mesh_for_odrom_using_partition_based_indexing(workDir, \
+                                                              pdaDir, \
+                                                              module, \
+                                                              fomMeshPath)
+
     run_od_pod_galerkin_full(workDir, problem, module, scenario, fomMeshPath)
-  print("")
+
+  else:
+    print("Nothing to do here")

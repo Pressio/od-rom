@@ -262,9 +262,9 @@ if __name__ == '__main__':
   # --------------------------------------
   banner_make_sample_meshes_all_partitions()
   # --------------------------------------
-  if "PodOdGalerkinGappy"  in module.algos[scenario] or \
-     "PodOdGalerkinMasked" in module.algos[scenario] or \
-     "PodOdGalerkinQuad"   in module.algos[scenario]:
+  if "PodOdGalerkinGappy"       in module.algos[scenario] or \
+     "PodOdGalerkinGappyMasked" in module.algos[scenario] or \
+     "PodOdGalerkinQuad"        in module.algos[scenario]:
 
     sampleMeshesList = module.sample_meshes[scenario]
 

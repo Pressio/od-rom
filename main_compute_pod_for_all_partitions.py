@@ -134,6 +134,8 @@ def compute_partition_based_rhs_pod(workDir, module, scenario, \
 # main
 #==============================================================
 if __name__ == '__main__':
+  banner_driving_script_info(os.path.basename(__file__))
+
   parser   = ArgumentParser()
   parser.add_argument("--wdir", dest="workdir", required=True)
   args     = parser.parse_args()
@@ -159,11 +161,8 @@ if __name__ == '__main__':
   # run this script again with a different working directory
   fomMeshPath = find_full_mesh_and_ensure_unique(workDir)
 
-  # --------------------------------------
-  banner_compute_pod_all_partitions()
-  # --------------------------------------
   mustDoPodModesForEachTile = False
-  if "PodOdGalerkinFull"    in module.algos[scenario] or \
+  if "PodOdGalerkin"        in module.algos[scenario] or \
      "PodOdGalerkinGappy"   in module.algos[scenario] or \
      "PodOdGalerkinMasked"  in module.algos[scenario] or \
      "PodOdGalerkinQuad"    in module.algos[scenario] or \
@@ -178,6 +177,8 @@ if __name__ == '__main__':
     mustDoPodModesForEachTile = True
 
   if mustDoPodModesForEachTile:
+    banner_compute_pod_all_partitions()
+
     for setId, trainIndices in module.basis_sets[scenario].items():
       print("partition-based POD for setId = {}".format(setId))
       print("----------------------------------")
@@ -187,5 +188,4 @@ if __name__ == '__main__':
       compute_partition_based_rhs_pod(workDir, module, scenario, \
                                       setId, trainDirs, fomMeshPath)
   else:
-    print("skipping")
-  print("")
+    print("Nothing to do here")

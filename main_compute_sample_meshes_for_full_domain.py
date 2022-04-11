@@ -141,6 +141,8 @@ def compute_sample_mesh_psampling_full_domain(workDir, module, scenario, pdaDir,
 # main
 #==============================================================
 if __name__ == '__main__':
+  banner_driving_script_info(os.path.basename(__file__))
+
   parser   = ArgumentParser()
   parser.add_argument("--wdir", dest="workdir", required=True)
   parser.add_argument("--pdadir", dest="pdadir", required=True)
@@ -161,25 +163,22 @@ if __name__ == '__main__':
   check_and_print_problem_summary(problem, module)
   print("")
 
-  # before we move on, we need to ensure that in workDir
-  # there is a unique FULL mesh. This is because the mesh is specified
-  # via command line argument and must be unique for a scenario.
-  # If one wants to run for a different mesh, then they have to
-  # run this script again with a different working directory
-  fomMeshPath = find_full_mesh_and_ensure_unique(workDir)
-
-  # --------------------------------------
-  banner_sample_mesh_full_domain()
-  # --------------------------------------
   if "PodStandardGalerkinGappy" in module.algos[scenario]:
-    sampleMeshesList = module.sample_meshes[scenario]
 
+    # before we move on, we need to ensure that in workDir
+    # there is a unique FULL mesh. This is because the mesh is specified
+    # via command line argument and must be unique for a scenario.
+    # If one wants to run for a different mesh, then they have to
+    # run this script again with a different working directory
+    fomMeshPath = find_full_mesh_and_ensure_unique(workDir)
+
+    banner_sample_mesh_full_domain()
+    sampleMeshesList = module.sample_meshes[scenario]
     if any(["random" in it for it in sampleMeshesList]):
       compute_sample_mesh_random_full_domain(workDir, module, scenario, pdaDir, fomMeshPath)
 
     if any(["psampling" in it for it in sampleMeshesList]):
       compute_sample_mesh_psampling_full_domain(workDir, module, scenario, pdaDir, fomMeshPath)
-
   else:
-    print("skipping")
+    print("Nothing to do here")
   print("")
