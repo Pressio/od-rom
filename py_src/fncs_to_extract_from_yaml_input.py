@@ -62,7 +62,7 @@ def find_state_pod_modes_path_from_input_file(runDir):
   return ifile["basesDir"]
 
 # -------------------------------------------------------------------
-def using_ic_as_reference_state(runDir):
+def find_if_using_ic_as_reference_state_from_yaml(runDir):
   with open(runDir+'/input.yaml') as file:
     ifile = yaml.load(file, Loader=yaml.FullLoader)
   return ifile["usingIcAsRefState"]
