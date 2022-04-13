@@ -2,12 +2,12 @@
 
 export PDADIR=$1 
 export WDIR=$2
-export scenario=$3
+export prob=$3
+export scenario=$4
 
 # fom needs to be run always
 python3 main_run_fom.py \
-	--wdir ${WDIR} --pdadir ${PDADIR} \
-	--problem py_problems.2d_swe -s ${scenario}
+	--wdir ${WDIR} --pdadir ${PDADIR} --problem py_problems.${prob} -s ${scenario}
 
 # the following are all executed AFTER fom data is generated
 # note that any of the following scripts runs something
@@ -31,6 +31,3 @@ python3 main_compute_sample_meshes_for_od_domain.py --wdir ${WDIR} --pdadir ${PD
 python3 main_pod_od_galerkin.py --wdir ${WDIR} --pdadir ${PDADIR}
 python3 main_pod_od_galerkin_gappy_real.py --wdir ${WDIR}
 python3 main_pod_od_galerkin_gappy_masked.py --wdir ${WDIR}
-
-
-# # python3 main_compute_od_rom_errors.py --wdir ${WDIR}
