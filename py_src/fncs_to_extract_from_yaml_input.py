@@ -48,3 +48,27 @@ def find_total_cells_from_info_file(workDir):
     return nx*ny
   else:
     sys.exit("Invalid dims = {}".format(dims))
+
+# -------------------------------------------------------------------
+def find_partition_info_path_from_input_file(runDir):
+  with open(runDir+'/input.yaml') as file:
+    ifile = yaml.load(file, Loader=yaml.FullLoader)
+  return ifile["partioningInfo"]
+
+# -------------------------------------------------------------------
+def find_state_pod_modes_path_from_input_file(runDir):
+  with open(runDir+'/input.yaml') as file:
+    ifile = yaml.load(file, Loader=yaml.FullLoader)
+  return ifile["basesDir"]
+
+# -------------------------------------------------------------------
+def using_ic_as_reference_state(runDir):
+  with open(runDir+'/input.yaml') as file:
+    ifile = yaml.load(file, Loader=yaml.FullLoader)
+  return ifile["usingIcAsRefState"]
+
+# -------------------------------------------------------------------
+def find_state_full_pod_modes_path_from_input_file(runDir):
+  with open(runDir+'/input.yaml') as file:
+    ifile = yaml.load(file, Loader=yaml.FullLoader)
+  return ifile["fullPodDir"]
