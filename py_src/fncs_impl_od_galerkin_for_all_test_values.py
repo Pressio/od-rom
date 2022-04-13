@@ -237,7 +237,7 @@ def run_masked_gappy_od_galerkin_for_all_test_values(workDir, problem, \
                  fmt="%5d")
 
       romRunDic['energy'] = energyValue
-      romRunDic['podDir'] = podDir
+      romRunDic['fullPodDir'] = podDir
       romRunDic['projectorDir'] = projectorDir
       romRunDic['partioningInfo'] = partInfoDir
       romRunDic['numDofsPerCell'] = module.numDofsPerCell
