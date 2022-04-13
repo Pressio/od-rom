@@ -166,7 +166,9 @@ def run_full_od_galerkin_for_all_test_values(workDir, problem, \
       if basesKind == "using_poly_bases":
         romRunDic['polyOrder'] = polyOrder
 
-      romRunDic['basesDir'] = basesDir
+      # this is without HR so basesDir and fullPodDir are the same
+      romRunDic['fullPodDir'] = basesDir
+      romRunDic['basesDir']   = basesDir
       romRunDic['partioningInfo'] = partInfoDir
       romRunDic['numDofsPerCell'] = module.numDofsPerCell
 
