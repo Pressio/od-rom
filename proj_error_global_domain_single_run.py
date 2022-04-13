@@ -32,8 +32,8 @@ if __name__ == '__main__':
                                                   numDofsPerCell, False)
   if useRefState:
     refState = np.loadtxt(fomDir + "/initial_state.txt")
-  for j in range(fomStates.shape[1]):
-    fomStates[:,j] -= refState
+    for j in range(fomStates.shape[1]):
+      fomStates[:,j] -= refState
   assert(fomStates.flags['F_CONTIGUOUS'])
 
   # read number of modes to use
