@@ -57,7 +57,7 @@ def load_fom_state_snapshot_matrix(dataDirs, fomTotDofs, \
 
   M = np.zeros((0, fomTotDofs))
   for targetDirec in dataDirs:
-    logger.info("reading data from {}".format(targetDirec))
+    logger.info("reading data from {}".format(os.path.basename(targetDirec)))
 
     data = np.fromfile(targetDirec+"/fom_snaps_state")
 
@@ -80,7 +80,7 @@ def load_fom_rhs_snapshot_matrix(dataDirs, fomTotDofs, numDofsPerCell):
   logger = logging.getLogger(__name__)
   M = np.zeros((0, fomTotDofs))
   for targetDirec in dataDirs:
-    logger.info("reading data from {}".format(targetDirec))
+    logger.info("reading data from {}".format(os.path.basename(targetDirec)))
 
     data = np.fromfile(targetDirec+"/fom_snaps_rhs")
     numTimeSteps = int(np.size(data)/fomTotDofs)
@@ -94,7 +94,8 @@ def load_fom_rhs_snapshot_matrix(dataDirs, fomTotDofs, numDofsPerCell):
 # -------------------------------------------------------------------
 def load_rom_state_snapshot_matrix(runDir, totalNumModes):
   logger = logging.getLogger(__name__)
-  logger.info("reading data from {}".format(runDir))
+  logger.info("reading data from {}".format(os.path.basename(runDir)))
+
   data = np.fromfile(runDir+"/rom_snaps_state")
   numTimeSteps = int(np.size(data)/totalNumModes)
   M = np.reshape(data, (numTimeSteps, totalNumModes))

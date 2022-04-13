@@ -28,4 +28,4 @@ class RomObserver:
     # note that final False, Flase is to indicate
     # we don't need to transpose here before writing and don't write shape
     write_matrix_to_bin_omit_shape(outDir+"/rom_snaps_state", self.sM_, False)
-    np.savetxt(outDir+"/fom_snaps_state_steps_and_times.txt", self.stateSnapsTimes_)
+    np.savetxt(outDir+"/rom_snaps_state_steps_and_times.txt", self.stateSnapsTimes_)

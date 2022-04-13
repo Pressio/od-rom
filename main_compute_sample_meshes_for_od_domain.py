@@ -240,6 +240,8 @@ def setLogger():
 #==============================================================
 if __name__ == '__main__':
   setLogger()
+  banner_driving_script_info(os.path.basename(__file__))
+
   parser   = ArgumentParser()
   parser.add_argument("--wdir", dest="workdir", required=True)
   parser.add_argument("--pdadir", dest="pdadir", required=True)

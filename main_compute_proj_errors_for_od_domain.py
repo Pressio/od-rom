@@ -58,7 +58,9 @@ def compute_od_pod_projection_errors(workDir, problem, module, scenario):
       for modeSettingIt_key, modeSettingIt_val \
           in module.odrom_modes_setting_policies[scenario].items():
 
+        # --------------------------------------------------------------
         if modeSettingIt_key == 'allTilesUseTheSameUserDefinedValue':
+        # --------------------------------------------------------------
           for numModes in modeSettingIt_val:
             modesPerTileDic = make_modes_per_tile_dic_with_const_modes_count(nTiles, numModes)
 
@@ -91,13 +93,14 @@ def compute_od_pod_projection_errors(workDir, problem, module, scenario):
                         "--fomdir", fomTestDirIt, \
                         "--poddir", currPodDir, \
                         "--infodir", partInfoDirIt,\
-                        "--userefstate",  str(module.use_ic_reference_state[scenario]))
+                        "--userefstate", str(module.use_ic_reference_state[scenario]))
                 popen  = subprocess.Popen(args, stdout=subprocess.PIPE)
                 popen.wait()
                 output = popen.stdout.read();
 
-
+        # --------------------------------------------------------------
         elif modeSettingIt_key == 'tileSpecificUsingEnergy':
+        # --------------------------------------------------------------
           for energyValue in modeSettingIt_val:
             modesPerTileDic = find_modes_per_tile_from_target_energy(module, scenario, \
                                                                      currPodDir, energyValue)
@@ -135,8 +138,9 @@ def compute_od_pod_projection_errors(workDir, problem, module, scenario):
                 popen.wait()
                 output = popen.stdout.read();
 
-
+        # --------------------------------------------------------------
         elif modeSettingIt_key == 'findMinValueAcrossTilesUsingEnergyAndUseInAllTiles':
+        # --------------------------------------------------------------
           for energyValue in modeSettingIt_val:
             modesPerTileDicTmp = find_modes_per_tile_from_target_energy(module, scenario, \
                                                                         currPodDir, energyValue)
