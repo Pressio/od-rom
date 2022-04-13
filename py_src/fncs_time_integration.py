@@ -1,12 +1,13 @@
 
 import numpy as np
 from scipy import linalg
-import time, math, sys
+import time, math, sys, logging
 
 def checknan_and_print_step_status_if_needed(step, nSteps, romState):
-  if step % 10 == 0:
+  logger = logging.getLogger(__name__)
+  if step % 25 == 0:
     stateNorm =linalg.norm(romState, check_finite=False)
-    print("step {:>6} of {:>6}, romStateNorm = {:>20}".format(step, nSteps, stateNorm))
+    logger.debug("step {:>6} of {:>6}, romStateNorm = {:>20}".format(step, nSteps, stateNorm))
     if math.isnan(stateNorm):
       return True
     return False

@@ -1,7 +1,7 @@
 
 # standard modules
 from argparse import ArgumentParser
-import sys, os, importlib, subprocess, pathlib
+import sys, os, importlib, subprocess, pathlib, logging
 import numpy as np
 from scipy import linalg as scipyla
 
@@ -10,26 +10,27 @@ try:
 except ImportError:
   raise ImportError("Unable to import pressiodemoapps")
 
-from py_src.banners_and_prints import *
+from py_src.fncs_banners_and_prints import *
 
-from py_src.miscellanea import \
+from py_src.fncs_miscellanea import \
   find_full_mesh_and_ensure_unique,\
   get_run_id, \
   find_all_partitions_info_dirs, \
-  make_modes_per_tile_dic_with_const_modes_count
+  make_modes_per_tile_dic_with_const_modes_count, \
+  find_modes_per_tile_from_target_energy
 
-from py_src.myio import \
+from py_src.fncs_myio import \
   read_scenario_from_dir, \
   read_problem_name_from_dir
 
-from py_src.directory_naming import \
+from py_src.fncs_directory_naming import \
   path_to_state_pod_data_dir, \
   string_identifier_from_partition_info_dir
 
-from py_src.fom_run_dirs_detection import \
+from py_src.fncs_fom_run_dirs_detection import \
   find_all_fom_test_dirs
 
-from py_src.mesh_info_file_extractors import *
+from py_src.fncs_to_extract_from_mesh_info_file import *
 
 # -------------------------------------------------------------------
 def compute_od_pod_projection_errors(workDir, problem, module, scenario):
@@ -75,9 +76,9 @@ def compute_od_pod_projection_errors(workDir, problem, module, scenario):
 
               # check outdir, make and run if needed
               if os.path.exists(outDir):
-                print('{} already exists'.format(outDir))
+                logging.info('{} already exists'.format(os.path.basename(outDir)))
               else:
-                print("Running od proj errro in {}".format(os.path.basename(outDir)))
+                logging.info("od proj error in {}".format(os.path.basename(outDir)))
                 os.system('mkdir -p ' + outDir)
 
                 np.savetxt(outDir+"/modes_per_tile.txt", \
@@ -85,7 +86,7 @@ def compute_od_pod_projection_errors(workDir, problem, module, scenario):
                            fmt="%5d")
 
                 args = ("python3", \
-                        str(this_file_path)+'/py_src/proj_error_od.py', \
+                        str(this_file_path)+'/proj_error_od_domain_single_run.py', \
                         "--wdir", outDir, \
                         "--fomdir", fomTestDirIt, \
                         "--poddir", currPodDir, \
@@ -114,9 +115,9 @@ def compute_od_pod_projection_errors(workDir, problem, module, scenario):
 
               # check outdir, make and run if needed
               if os.path.exists(outDir):
-                print('{} already exists'.format(outDir))
+                logging.info('{} already exists'.format(os.path.basename(outDir)))
               else:
-                print("Running od proj errro in {}".format(os.path.basename(outDir)))
+                logging.info("od proj error in {}".format(os.path.basename(outDir)))
                 os.system('mkdir -p ' + outDir)
 
                 np.savetxt(outDir+"/modes_per_tile.txt", \
@@ -124,7 +125,7 @@ def compute_od_pod_projection_errors(workDir, problem, module, scenario):
                            fmt="%5d")
 
                 args = ("python3", \
-                        str(this_file_path)+'/py_src/proj_error_od.py', \
+                        str(this_file_path)+'/proj_error_od_domain_single_run.py', \
                         "--wdir", outDir, \
                         "--fomdir", fomTestDirIt, \
                         "--poddir", currPodDir, \
@@ -156,9 +157,9 @@ def compute_od_pod_projection_errors(workDir, problem, module, scenario):
 
               # check outdir, make and run if needed
               if os.path.exists(outDir):
-                print('{} already exists'.format(outDir))
+                logging.info('{} already exists'.format(os.path.basename(outDir)))
               else:
-                print("Running od proj errro in {}".format(os.path.basename(outDir)))
+                logging.info("od proj error in {}".format(os.path.basename(outDir)))
                 os.system('mkdir -p ' + outDir)
 
                 np.savetxt(outDir+"/modes_per_tile.txt", \
@@ -166,7 +167,7 @@ def compute_od_pod_projection_errors(workDir, problem, module, scenario):
                            fmt="%5d")
 
                 args = ("python3", \
-                        str(this_file_path)+'/py_src/proj_error_od.py', \
+                        str(this_file_path)+'/proj_error_od_domain_single_run.py', \
                         "--wdir", outDir, \
                         "--fomdir", fomTestDirIt, \
                         "--poddir", currPodDir, \
@@ -181,10 +182,18 @@ def compute_od_pod_projection_errors(workDir, problem, module, scenario):
           sys.exit('compute_od_pod_projection_errors: invalid modeSettingPolicy = {}'.format(modeSettingIt_key))
 
 
+# -------------------------------------------------------------------
+def setLogger():
+  dateFmt = '%Y-%m-%d' # %H:%M:%S'
+  # logFmt1 = '%(asctime)s %(levelname)s %(module)s - %(funcName)s: %(message)s'
+  logFmt2 = '%(levelname)-8s: [%(name)s] %(message)s'
+  logging.basicConfig(format=logFmt2, encoding='utf-8', level=logging.DEBUG)
+
 #==============================================================
 # main
 #==============================================================
 if __name__ == '__main__':
+  setLogger()
   banner_driving_script_info(os.path.basename(__file__))
 
   parser   = ArgumentParser()
@@ -196,17 +205,15 @@ if __name__ == '__main__':
   if not os.path.exists(workDir):
     sys.exit("Working dir {} does not exist, terminating".format(workDir))
 
-  # --------------------------------------
   banner_import_problem()
-  # --------------------------------------
   scenario = read_scenario_from_dir(workDir)
   problem  = read_problem_name_from_dir(workDir)
   module   = importlib.import_module(problem)
   check_and_print_problem_summary(problem, module)
-  print("")
+  logging.info("")
 
   if "PodOdProjectionError" in module.algos[scenario]:
     banner_compute_od_projection_error()
     compute_od_pod_projection_errors(workDir, problem, module, scenario)
   else:
-    print("Nothing to do here")
+    logging.info("Nothing to do here")

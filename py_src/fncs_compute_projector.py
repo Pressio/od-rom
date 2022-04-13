@@ -1,9 +1,9 @@
 
 import numpy as np
-import sys, os, time
+import sys, os, time, logging
 from scipy import linalg as scipyla
 
-from .myio import load_basis_from_binary_file
+from .fncs_myio import load_basis_from_binary_file
 
 # -------------------------------------------------------------------
 def compute_gappy_projector_using_factor_of_state_pod_modes(outDir, partitionInfoDir, \
@@ -11,6 +11,8 @@ def compute_gappy_projector_using_factor_of_state_pod_modes(outDir, partitionInf
                                                             sampleMeshDir, \
                                                             modesPerTileDic, \
                                                             numDofsPerCell):
+
+  logger = logging.getLogger(__name__)
 
   nTiles = len(modesPerTileDic)
   maxNumRows = 0
@@ -30,14 +32,14 @@ def compute_gappy_projector_using_factor_of_state_pod_modes(outDir, partitionInf
     mySmCount    = len(mySmMeshGids)
 
     K = myNumStatePodModes*3 + 1
-    print("tile::: ", K, myNumStatePodModes, mySmCount)
+    logger.debug("tile::: {} {} {}".format(K, myNumStatePodModes, mySmCount))
     if mySmCount*numDofsPerCell < K:
-      print("Cannot have K > mySmCount*numDofsPerCell in tileId = {:>5}, adapting K".format(tileId))
+      logger.debug("Cannot have K > mySmCount*numDofsPerCell in tileId = {:>5}, adapting K".format(tileId))
       K = mySmCount*numDofsPerCell - 1
 
     # K should be larger than myNumStatePodModes
     if K < myNumStatePodModes:
-      print("Cannot have K < myNumStatePodModes in tileId = {:>5}, adapting K".format(tileId))
+      logger.debug("Cannot have K < myNumStatePodModes in tileId = {:>5}, adapting K".format(tileId))
       K = myNumStatePodModes + 1
 
     myFullRhsPodFile = rhsPodDir + "/lsv_rhs_p_" + str(tileId)
@@ -58,7 +60,7 @@ def compute_gappy_projector_using_factor_of_state_pod_modes(outDir, partitionInf
 
     A = myFullPhi.transpose() @ myTheta
     projector = A @ scipyla.pinv(mySlicedTheta)
-    print(" tileId = {:>5}, projectorShape = {}".format(tileId, projector.T.shape))
+    logger.debug(" tileId = {:>5}, projectorShape = {}".format(tileId, projector.T.shape))
 
     # write to file
     # here when writing w need to consider that project above is computed
@@ -83,6 +85,8 @@ def compute_quad_projector_single_tile(fomTrainDirs, fomMesh, outDir, \
                                        partitionInfoDir, statePodDir, \
                                        sampleMeshDir, modesPerTileDic, \
                                        numDofsPerCell):
+  logger = logging.getLogger(__name__)
+
   fomTotCells      = find_total_cells_from_info_file(fomMesh)
   totFomDofs       = fomTotCells*numDofsPerCell
   fSnapsFullDomain = load_fom_rhs_snapshot_matrix(fomTrainDirs, totFomDofs, numDofsPerCell)
@@ -95,8 +99,8 @@ def compute_quad_projector_single_tile(fomTrainDirs, fomMesh, outDir, \
 
   mySmMeshGids  = np.loadtxt(sampleMeshDir + "/sample_mesh_gids_p_0.txt", dtype=int)
   mySmCount     = len(mySmMeshGids)
-  print("required = ", numDofsPerCell* mySmCount)
-  print("snaps #  = ", fSnapsFullDomain.shape[1] )
+  logger.debug("required = {}".format(numDofsPerCell* mySmCount))
+  logger.debug("snaps #  = {}".format(fSnapsFullDomain.shape[1]))
   assert( numDofsPerCell* mySmCount <= fSnapsFullDomain.shape[1] )
 
   # phi on sample mesh
@@ -109,19 +113,19 @@ def compute_quad_projector_single_tile(fomTrainDirs, fomMesh, outDir, \
   for j in range(numDofsPerCell):
     myfSnapsSampleMesh[j::numDofsPerCell, :] = fSnapsFullDomain[numDofsPerCell*mySmMeshGids + j, :]
 
-  print("myPhiSampleMesh.shape = ", myPhiSampleMesh.shape)
-  print("myfSnapsSampleMesh.shape = ", myfSnapsSampleMesh.shape)
-  print("fSnapsFullDomain.shape = ", fSnapsFullDomain.shape)
+  logger.debug("myPhiSampleMesh.shape = {}".format(myPhiSampleMesh.shape))
+  logger.debug("myfSnapsSampleMesh.shape = {}".format(myfSnapsSampleMesh.shape))
+  logger.debug("fSnapsFullDomain.shape = {}".format(fSnapsFullDomain.shape))
 
   # setup sequence of ls problem: minimize (Aw - b)
   # initialize weights (weights for each basis vector)
   W = np.zeros_like(myPhiSampleMesh)
-  print(W.shape)
+  logger.debug(W.shape)
   for j in range(myPhiFullMesh.shape[1]):
     A = myPhiSampleMesh[:,j:j+1] * myfSnapsSampleMesh[:, :]
-    print("A.shape = ", A.shape)
+    logger.debug("A.shape = {}".format(A.shape))
     b = myPhiFullMesh[:,j].transpose() @ fSnapsFullDomain[:, :]
-    print("b.shape = ", b.shape)
+    logger.debug("b.shape = {}".format(b.shape))
     W[:,j], _ = sciop.nnls(A.T, b, maxiter=5000)
 
   mjop = myPhiSampleMesh * W
@@ -133,6 +137,8 @@ def compute_quad_projector(fomTrainDirs, fomMesh, outDir, \
                            partitionInfoDir, statePodDir, \
                            sampleMeshDir, modesPerTileDic, \
                            numDofsPerCell):
+
+  logger = logging.getLogger(__name__)
 
   # load f snapshots
   fomTotCells      = find_total_cells_from_info_file(fomMesh)
@@ -159,8 +165,8 @@ def compute_quad_projector(fomTrainDirs, fomMesh, outDir, \
     sampleGidsFile = sampleMeshDir + "/sample_mesh_gids_p_"+str(tileId)+".txt"
     mySmMeshGids   = np.loadtxt(sampleGidsFile, dtype=int)
     mySmCount      = len(mySmMeshGids)
-    print(numDofsPerCell* mySmCount)
-    print(fSnapsFullDomain.shape[1])
+    logger.debug(numDofsPerCell* mySmCount)
+    logger.debug(fSnapsFullDomain.shape[1])
 
     # get rhs snaps on sample mesh
     rowsFile = partitionInfoDir + "/state_vec_rows_wrt_full_mesh_p_"+str(tileId)+".txt"
@@ -172,15 +178,15 @@ def compute_quad_projector(fomTrainDirs, fomMesh, outDir, \
     commonElem  = np.sort(list(commonElem))
     mylocalinds = np.searchsorted(myCellGids, commonElem)
     myfSnapsSampleMesh = np.zeros((mySmCount*numDofsPerCell, myRhsSnaps.shape[1]), order='F')
-    print(myfSnapsSampleMesh.shape)
-    print(len(mylocalinds))
+    logger.debug(myfSnapsSampleMesh.shape)
+    logger.debug(len(mylocalinds))
     for j in range(numDofsPerCell):
       myfSnapsSampleMesh[j::numDofsPerCell, :] = myRhsSnaps[numDofsPerCell*mylocalinds + j, :]
 
     # setup sequence of ls problem: minimize (Aw - b)
     # initialize weights (weights for each basis vector)
     W = np.zeros_like(myPhiSampleMesh)
-    print(W.shape)
+    logger.debug(W.shape)
 
     numModes = myPhiFullMesh.shape[1]
     for j in range(numModes):

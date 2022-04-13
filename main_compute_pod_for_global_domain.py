@@ -1,41 +1,40 @@
 
 # standard modules
 from argparse import ArgumentParser
-import sys, os, importlib
+import sys, os, importlib, logging
 import numpy as np
 
-from py_src.banners_and_prints import \
+from py_src.fncs_banners_and_prints import \
   banner_driving_script_info, \
   banner_import_problem, check_and_print_problem_summary, \
   banner_compute_full_pod, color_resetter
 
-from py_src.miscellanea import \
+from py_src.fncs_miscellanea import \
   find_full_mesh_and_ensure_unique, \
   get_run_id
 
-from py_src.myio import \
+from py_src.fncs_myio import \
   read_scenario_from_dir, \
   read_problem_name_from_dir, \
   load_fom_state_snapshot_matrix, \
   load_fom_rhs_snapshot_matrix
 
-from py_src.directory_naming import \
+from py_src.fncs_directory_naming import \
   path_to_full_domain_state_pod_data_dir, \
   path_to_full_domain_rhs_pod_data_dir
 
-from py_src.fom_run_dirs_detection import \
+from py_src.fncs_fom_run_dirs_detection import \
   find_fom_train_dirs_for_target_set_of_indices
 
-from py_src.mesh_info_file_extractors import *
-
-from py_src.svd import do_svd_py
+from py_src.fncs_to_extract_from_mesh_info_file import *
+from py_src.fncs_svd import do_svd_py
 
 # -------------------------------------------------------------------
 def compute_full_domain_state_pod(workDir, module, scenario, \
                                   setId, dataDirs, fomMesh):
   outDir = path_to_full_domain_state_pod_data_dir(workDir, setId)
   if os.path.exists(outDir):
-    print('{} already exists'.format(outDir))
+    logging.info('{} already exists'.format(outDir))
   else:
     fomTotCells = find_total_cells_from_info_file(fomMesh)
     totFomDofs  = fomTotCells*module.numDofsPerCell
@@ -47,13 +46,13 @@ def compute_full_domain_state_pod(workDir, module, scenario, \
     fomStateSnapsFullDomain = load_fom_state_snapshot_matrix(dataDirs, totFomDofs, \
                                                              module.numDofsPerCell, \
                                                              subtractInitialCondition)
-    print("pod: fomStateSnapsFullDomain.shape = ", fomStateSnapsFullDomain.shape)
+    logging.debug("fomStateSnapsFullDomain.shape = {}".format(fomStateSnapsFullDomain.shape))
 
     os.system('mkdir -p ' + outDir)
     lsvFile = outDir + '/lsv_state_p_0'
     svaFile = outDir + '/sva_state_p_0'
     do_svd_py(fomStateSnapsFullDomain, lsvFile, svaFile)
-  print("")
+  logging.info("")
 
 # -------------------------------------------------------------------
 def compute_full_domain_rhs_pod(workDir, module, scenario, \
@@ -62,22 +61,30 @@ def compute_full_domain_rhs_pod(workDir, module, scenario, \
   totFomDofs  = fomTotCells*module.numDofsPerCell
   fomRhsSnapsFullDomain   = load_fom_rhs_snapshot_matrix(dataDirs, totFomDofs, \
                                                          module.numDofsPerCell)
-  print("pod: fomRhsSnapsFullDomain.shape = ", fomRhsSnapsFullDomain.shape)
+  logging.debug("fomRhsSnapsFullDomain.shape = {}".format(fomRhsSnapsFullDomain.shape))
 
   outDir = path_to_full_domain_rhs_pod_data_dir(workDir, setId)
   if os.path.exists(outDir):
-    print('{} already exists'.format(outDir))
+    logging.info('{} already exists'.format(outDir))
   else:
     os.system('mkdir -p ' + outDir)
     lsvFile = outDir + '/lsv_rhs_p_0'
     svaFile = outDir + '/sva_rhs_p_0'
     do_svd_py(fomRhsSnapsFullDomain, lsvFile, svaFile)
-  print("")
+  logging.info("")
+
+# -------------------------------------------------------------------
+def setLogger():
+  dateFmt = '%Y-%m-%d' # %H:%M:%S'
+  # logFmt1 = '%(asctime)s %(levelname)s %(module)s - %(funcName)s: %(message)s'
+  logFmt2 = '%(levelname)-8s: [%(name)s] %(message)s'
+  logging.basicConfig(format=logFmt2, encoding='utf-8', level=logging.DEBUG)
 
 #==============================================================
 # main
 #==============================================================
 if __name__ == '__main__':
+  setLogger()
   banner_driving_script_info(os.path.basename(__file__))
 
   parser   = ArgumentParser()
@@ -89,15 +96,14 @@ if __name__ == '__main__':
   if not os.path.exists(workDir):
     sys.exit("Working dir {} does not exist, terminating".format(workDir))
 
-  # --------------------------------------
   banner_import_problem()
-  # --------------------------------------
   scenario = read_scenario_from_dir(workDir)
   problem  = read_problem_name_from_dir(workDir)
   module   = importlib.import_module(problem)
   check_and_print_problem_summary(problem, module)
-  print("")
 
+  # we need to compute global POD if any of the 
+  # following target algorithms is present in the scenario
   triggers = ["PodStandardGalerkin", \
               "PodStandardGalerkinGappy",\
               "PodStandardProjectionError"]
@@ -112,14 +118,14 @@ if __name__ == '__main__':
     fomMeshPath = find_full_mesh_and_ensure_unique(workDir)
 
     for setId, trainIndices in module.basis_sets[scenario].items():
-      print("\033[1;37;46mFULL domain STATE POD for setId = {} {}".format(setId, color_resetter()))
-      print("------------------------------------")
+      logging.info("computing STATE POD on FULL domain for setId = {} {}".format(setId, color_resetter()))
+      logging.info(55*"-")
       trainDirs = find_fom_train_dirs_for_target_set_of_indices(workDir, trainIndices)
       compute_full_domain_state_pod(workDir, module, scenario, \
                                     setId, trainDirs, fomMeshPath)
 
       if "PodStandardGalerkinGappy" in module.algos[scenario]:
-        print("\033[1;37;46mFULL domain RHS POD for setId = {} {}".format(setId, color_resetter()))
-        print("----------------------------------")
+        logging.info("computing RHS POD on FULL domain for setId = {} {}".format(setId, color_resetter()))
+        logging.info(55*"-")
         compute_full_domain_rhs_pod(workDir, module, scenario, \
                                     setId, trainDirs, fomMeshPath)

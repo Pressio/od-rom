@@ -1,8 +1,8 @@
 
 import numpy as np
 from scipy import linalg
-import time, math
-from .myio import load_basis_from_binary_file
+import time, math, logging
+from .fncs_myio import load_basis_from_binary_file
 
 class OdRomGappy:
   def __init__(self,
@@ -13,6 +13,8 @@ class OdRomGappy:
                fullPodDir, projectorDir, phiOnStencilDir, \
                refStateFullMeshOrdering, refStateForOdRomAlgo,\
                fullMeshTotalDofs):
+
+    logger = logging.getLogger(__name__)
 
     # physical dimensions and dofs/cell
     self.physDim_ = physDim
@@ -26,7 +28,7 @@ class OdRomGappy:
     self.nTiles_   = len(modesDicIn.keys())
     # count all mode count within each tile
     self.totalModesCount_ = np.sum(list(self.modesDic_.values()))
-    print("self.totalModesCount_ = {}".format(self.totalModesCount_))
+    logger.debug("self.totalModesCount_ = {}".format(self.totalModesCount_))
 
     self.fomStateFullMesh_    = np.zeros(fullMeshTotalDofs)
     self.fomStateStencilMesh_ = np.zeros(fomObj.totalDofStencilMesh())

@@ -40,13 +40,7 @@ def create_problem_for_scenario(scenario, meshObj, coeffDic, dicIn, val):
   coriolis = coeffDic['coriolis']
   pulse    = coeffDic['pulsemag']
 
-  if scenario == 1:
-    coriolis = val
-  elif scenario == 2:
-    coriolis = val
-  elif scenario == 3:
-    coriolis = val
-  elif scenario == -1:
+  if scenario in [1,2,3,4,-1]:
     coriolis = val
   else:
     sys.exit("__init__: invalid scenario {} for 2d_swe".format(scenario))

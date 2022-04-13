@@ -1,13 +1,22 @@
 
-base_dic              = {}
+###############################################################
+base_dic = {}
+###############################################################
 '''
 base_dic MUST ALWAYS be present
 '''
 
+###############################################################
 train_points = {}
 test_points  = {}
+###############################################################
+'''
+say something
+'''
 
+###############################################################
 algos = {}
+###############################################################
 '''
 list of strings to set which algos to run
 
@@ -25,7 +34,17 @@ choices:
   LegendreOdGalerkinFull
 '''
 
+###############################################################
+basis_sets = {}
+###############################################################
+
+'''
+the sets of training runs to use for doing pod
+'''
+
+###############################################################
 use_ic_reference_state = {}
+###############################################################
 '''
 True/False to set initial condition as ref state
 
@@ -39,11 +58,18 @@ if false:
 - FOM initial condition is used to compute rom ic
 '''
 
+###############################################################
 standardrom_modes_setting_policies = {}
 odrom_modes_setting_policies       = {}
 odrom_min_num_modes_per_tile       = {}
+###############################################################
+'''
+fill
+'''
 
+###############################################################
 odrom_partitions = {}
+###############################################################
 '''
 defines the target tiling structure and how this is done
 
@@ -72,12 +98,9 @@ for 2d:
    }
 '''
 
-basis_sets = {}
-'''
-the sets of training runs to use for doing pod
-'''
-
+###############################################################
 sample_meshes = {}
+###############################################################
 '''
 Example of sample meshes:
 sample_meshes[1] = [["random", 0.25], ["psampling", 0.25, 0] ]
@@ -86,7 +109,9 @@ for random   : [string, fraction]
 for psampling: [string, fraction, int of dof to use to compute sm]
 '''
 
+###############################################################
 odrom_poly_order = {}
+###############################################################
 '''
 Example:
   odrom_poly_order[1] = [-1, 1, 4, 6]

@@ -1,53 +1,49 @@
 
 # standard modules
 from argparse import ArgumentParser
-import sys, os, importlib
+import sys, os, importlib, logging
 import numpy as np
 
-from py_src.banners_and_prints import *
+from py_src.fncs_banners_and_prints import *
 
-from py_src.miscellanea import \
+from py_src.fncs_miscellanea import \
   find_full_mesh_and_ensure_unique,\
   get_run_id, \
   find_all_partitions_info_dirs
 
-from py_src.myio import \
+from py_src.fncs_myio import \
   read_scenario_from_dir, \
   read_problem_name_from_dir,\
   load_fom_state_snapshot_matrix, \
   load_fom_rhs_snapshot_matrix
 
-from py_src.directory_naming import \
+from py_src.fncs_directory_naming import \
   path_to_partition_info_dir, \
   path_to_state_pod_data_dir, \
   path_to_rhs_pod_data_dir, \
   string_identifier_from_partition_info_dir
 
-from py_src.fom_run_dirs_detection import \
+from py_src.fncs_fom_run_dirs_detection import \
   find_fom_train_dirs_for_target_set_of_indices
 
-from py_src.mesh_info_file_extractors import *
-
-from py_src.svd import do_svd_py
+from py_src.fncs_to_extract_from_mesh_info_file import *
+from py_src.fncs_svd import do_svd_py
 
 # -------------------------------------------------------------------
 def compute_partition_based_state_pod(workDir, module, scenario, \
                                       setId, dataDirs, fomMesh):
   '''
-  compute pod from state snapshost
+  compute pod from STATE snapshosts
   '''
   fomTotCells = find_total_cells_from_info_file(fomMesh)
   totFomDofs  = fomTotCells*module.numDofsPerCell
 
-  # find from scenario if we want to subtract initial condition
-  # from snapshots before doing pod.
+  # find if we want to subtract initial condition before doing pod
   subtractInitialCondition = module.use_ic_reference_state[scenario]
 
-  # only load snapshots once
-  fomStateSnapsFullDomain = load_fom_state_snapshot_matrix(dataDirs, totFomDofs, \
-                                                           module.numDofsPerCell, \
-                                                           subtractInitialCondition)
-  print("pod: fomStateSnapsFullDomain.shape = ", fomStateSnapsFullDomain.shape)
+  # logic to ensure snapshots are only loaded once
+  needToLoadSnaphots = True
+  fomStateSnapsFullDomain = None
 
   # with the FOM data loaded for a target setId (i.e. set of runs)
   # loop over all partitions and compute local POD.
@@ -56,13 +52,21 @@ def compute_partition_based_state_pod(workDir, module, scenario, \
     # use it to uniquely associate a directory where we store the POD
     stringIdentifier = string_identifier_from_partition_info_dir(partitionInfoDirIt)
     nTiles = np.loadtxt(partitionInfoDirIt+"/ntiles.txt", dtype=int)
-    #nTilesX, nTilesY = int(tiles[0]), int(tiles[1])
 
     outDir = path_to_state_pod_data_dir(workDir, stringIdentifier, setId)
     if os.path.exists(outDir):
-      print('{} already exists'.format(outDir))
+      logging.info('{} already exists'.format(outDir))
     else:
       os.system('mkdir -p ' + outDir)
+
+      # only load snapshots once
+      if needToLoadSnaphots:
+        needToLoadSnaphots = False
+        fomStateSnapsFullDomain = load_fom_state_snapshot_matrix(dataDirs, totFomDofs, \
+                                                                 module.numDofsPerCell, \
+                                                                 subtractInitialCondition)
+        logging.debug("pod: fomStateSnapsFullDomain.shape = {}".format(fomStateSnapsFullDomain.shape))
+
 
       # loop over each tile
       for tileId in range(nTiles):
@@ -74,27 +78,24 @@ def compute_partition_based_state_pod(workDir, module, scenario, \
 
         # use the row indices to get only the data that belongs to me
         myStateEntries = fomStateSnapsFullDomain[myRowsInFullState, :]
-        print(" state pod for tileId={:>5} with stateSlice.Shape={}".format(tileId, myStateEntries.shape))
+        logging.debug(" state pod for tileId={:>5} with stateSlice.Shape={}".format(tileId, myStateEntries.shape))
 
         lsvFile = outDir + '/lsv_state_p_'+str(tileId)
         svaFile = outDir + '/sva_state_p_'+str(tileId)
         do_svd_py(myStateEntries, lsvFile, svaFile)
 
-  print("")
-
 # -------------------------------------------------------------------
 def compute_partition_based_rhs_pod(workDir, module, scenario, \
                                     setId, dataDirs, fomMesh):
   '''
-  compute pod for rhs snapshots
+  compute pod for RHS snapshots
   '''
   fomTotCells = find_total_cells_from_info_file(fomMesh)
   totFomDofs  = fomTotCells*module.numDofsPerCell
 
-  # only load snapshots once
-  fomRhsSnapsFullDomain   = load_fom_rhs_snapshot_matrix(dataDirs, totFomDofs, \
-                                                         module.numDofsPerCell)
-  print("pod: fomRhsSnapsFullDomain.shape = ", fomRhsSnapsFullDomain.shape)
+  # logic to ensure snapshots are only loaded once
+  needToLoadSnaphots = True
+  fomRhsSnapsFullDomain = None
 
   # with the FOM data loaded for a target setId (i.e. set of runs)
   # loop over all partitions and compute local POD.
@@ -107,9 +108,16 @@ def compute_partition_based_rhs_pod(workDir, module, scenario, \
 
     outDir = path_to_rhs_pod_data_dir(workDir, stringIdentifier, setId)
     if os.path.exists(outDir):
-      print('{} already exists'.format(outDir))
+      logging.info('{} already exists'.format(outDir))
     else:
       os.system('mkdir -p ' + outDir)
+
+      # only load snapshots once
+      if needToLoadSnaphots:
+        needToLoadSnaphots = False
+        fomRhsSnapsFullDomain = load_fom_rhs_snapshot_matrix(dataDirs, totFomDofs, \
+                                                             module.numDofsPerCell)
+        logging.debug("pod: fomRhsSnapsFullDomain.shape = {}".format(fomRhsSnapsFullDomain.shape))
 
       # loop over each tile
       for tileId in range(nTiles):
@@ -121,19 +129,25 @@ def compute_partition_based_rhs_pod(workDir, module, scenario, \
 
         # use the row indices to get only the data that belongs to me
         myRhsSlice   = fomRhsSnapsFullDomain[myRowsInFullState, :]
-        print(" rhs pod for tileId={:>5} with rhsSlice.shape={}".format(tileId, myRhsSlice.shape))
+        logging.debug(" rhs pod for tileId={:>5} with rhsSlice.shape={}".format(tileId, myRhsSlice.shape))
 
         lsvFile = outDir + '/lsv_rhs_p_'+str(tileId)
         svaFile = outDir + '/sva_rhs_p_'+str(tileId)
         do_svd_py(myRhsSlice, lsvFile, svaFile)
 
-  print("")
 
+# -------------------------------------------------------------------
+def setLogger():
+  dateFmt = '%Y-%m-%d' # %H:%M:%S'
+  # logFmt1 = '%(asctime)s %(levelname)s %(module)s - %(funcName)s: %(message)s'
+  logFmt2 = '%(levelname)-8s: [%(name)s] %(message)s'
+  logging.basicConfig(format=logFmt2, encoding='utf-8', level=logging.DEBUG)
 
 #==============================================================
 # main
 #==============================================================
 if __name__ == '__main__':
+  setLogger()
   banner_driving_script_info(os.path.basename(__file__))
 
   parser   = ArgumentParser()
@@ -145,14 +159,12 @@ if __name__ == '__main__':
   if not os.path.exists(workDir):
     sys.exit("Working dir {} does not exist, terminating".format(workDir))
 
-  # --------------------------------------
   banner_import_problem()
-  # --------------------------------------
   scenario = read_scenario_from_dir(workDir)
   problem  = read_problem_name_from_dir(workDir)
   module   = importlib.import_module(problem)
   check_and_print_problem_summary(problem, module)
-  print("")
+  logging.info("")
 
   # before we move on, we need to ensure that in workDir
   # there is a unique FULL mesh. This is because the mesh is specified
@@ -180,12 +192,13 @@ if __name__ == '__main__':
     banner_compute_pod_all_partitions()
 
     for setId, trainIndices in module.basis_sets[scenario].items():
-      print("partition-based POD for setId = {}".format(setId))
-      print("----------------------------------")
+      logging.info("partition-local POD for setId = {}".format(setId))
+      print(35*"-")
       trainDirs = find_fom_train_dirs_for_target_set_of_indices(workDir, trainIndices)
       compute_partition_based_state_pod(workDir, module, scenario, \
                                         setId, trainDirs, fomMeshPath)
+      logging.info("")
       compute_partition_based_rhs_pod(workDir, module, scenario, \
                                       setId, trainDirs, fomMeshPath)
   else:
-    print("Nothing to do here")
+    logging.info("Nothing to do here")

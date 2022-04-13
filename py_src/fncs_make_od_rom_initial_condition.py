@@ -1,7 +1,7 @@
 
 import numpy as np
 import sys, os
-from .myio import load_basis_from_binary_file
+from .fncs_myio import load_basis_from_binary_file
 
 # -------------------------------------------------------------------
 def make_od_rom_initial_condition(workDir, appObjForIc, \

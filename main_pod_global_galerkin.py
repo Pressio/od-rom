@@ -2,7 +2,7 @@
 # standard modules
 from argparse import ArgumentParser
 import sys, os, importlib, pathlib, math
-import re, time, yaml, random, subprocess
+import re, time, yaml, random, subprocess, logging
 import numpy as np
 from scipy import linalg as scipyla
 from decimal import Decimal
@@ -13,25 +13,28 @@ try:
 except ImportError:
   raise ImportError("Unable to import pressiodemoapps")
 
-from py_src.banners_and_prints import *
+from py_src.fncs_banners_and_prints import *
 
-from py_src.miscellanea import \
+from py_src.fncs_miscellanea import \
   find_full_mesh_and_ensure_unique
 
-from py_src.myio import \
+from py_src.fncs_cumulative_energy import \
+  compute_cumulative_energy
+
+from py_src.fncs_myio import \
   read_scenario_from_dir, \
   read_problem_name_from_dir, \
   load_basis_from_binary_file, \
   write_dic_to_yaml_file
 
-from py_src.directory_naming import \
+from py_src.fncs_directory_naming import \
   path_to_full_domain_state_pod_data_dir
 
-from py_src.mesh_info_file_extractors import *
+from py_src.fncs_to_extract_from_mesh_info_file import *
 
-from py_src.standardrom_full import *
-from py_src.observer import RomObserver
-from py_src.odrom_time_integrators import *
+from py_src.class_standardrom_full import *
+from py_src.class_observer_rom import RomObserver
+from py_src.fncs_time_integration import *
 
 # -------------------------------------------------------------------
 def find_modes_for_full_domain_from_target_energy(module, scenario, podDir, energy):
@@ -85,9 +88,9 @@ def run_full_standard_galerkin_for_all_test_values(workDir, problem, \
 
     # check outdir, make and run if needed
     if os.path.exists(outDir):
-      print('{} already exists'.format(outDir))
+      logging.info('{} already exists'.format(outDir))
     else:
-      print("Running standard rom in {}".format(os.path.basename(outDir)))
+      logging.info("Running standard rom in {}".format(os.path.basename(outDir)))
       os.system('mkdir -p ' + outDir)
       romRunDic = module.base_dic[scenario]['odrom'].copy()
       coeffDic  = module.base_dic[scenario]['physicalCoefficients'].copy()
@@ -139,7 +142,7 @@ def run_full_standard_galerkin_for_all_test_values(workDir, problem, \
       stateSamplingFreq = int(module.base_dic[scenario]['stateSamplingFreqTest'])
       romRunDic['stateSamplingFreq'] = stateSamplingFreq
       # here I need to pass {0: numModes} because of API compatibility
-      obsO = RomObserver(stateSamplingFreq, numSteps, {0: numModes})
+      obsO = RomObserver(stateSamplingFreq, numSteps, {0: numModes}, dt)
 
       # write yaml to file
       inputFile = outDir + "/input.yaml"
@@ -153,8 +156,13 @@ def run_full_standard_galerkin_for_all_test_values(workDir, problem, \
       elif odeScheme in ["RungeKutta2", "RK2", "rk2"]:
         odrom_rk2(romObj, romState, numSteps, dt, obsO)
 
+      # because of how RomObserver and the time integration are done,
+      # we need to call it one time at the time to ensure
+      # we observe/store the final rom state
+      obsO(numSteps, romState)
+
       elapsed = time.time() - pTimeStart
-      print("elapsed = {}".format(elapsed))
+      logging.info("elapsed = {}".format(elapsed))
       f = open(outDir+"/timing.txt", "w")
       f.write(str(elapsed))
       f.close()
@@ -164,7 +172,7 @@ def run_full_standard_galerkin_for_all_test_values(workDir, problem, \
       # reconstruct final state
       romObj.reconstructFomStateFullMeshOrdering(romState)
       np.savetxt(outDir+"/y_rec_final.txt", romObj.viewFomState())
-  print("")
+  logging.info("")
 
 # -------------------------------------------------------------------
 def run_standard_pod_galerkin_full(workDir, problem, module, \
@@ -205,10 +213,18 @@ def run_standard_pod_galerkin_full(workDir, problem, module, \
       else:
         sys.exit('run_standard_pod_galerkin_full: invalid modeSettingPolicy = {}'.format(modeSettingIt_key))
 
+# -------------------------------------------------------------------
+def setLogger():
+  dateFmt = '%Y-%m-%d' # %H:%M:%S'
+  # logFmt1 = '%(asctime)s %(levelname)s %(module)s - %(funcName)s: %(message)s'
+  logFmt2 = '%(levelname)-8s: [%(name)s] %(message)s'
+  logging.basicConfig(format=logFmt2, encoding='utf-8', level=logging.DEBUG)
+
 #==============================================================
 # main
 #==============================================================
 if __name__ == '__main__':
+  setLogger()
   banner_driving_script_info(os.path.basename(__file__))
 
   parser   = ArgumentParser()
@@ -220,14 +236,12 @@ if __name__ == '__main__':
   if not os.path.exists(workDir):
     sys.exit("Working dir {} does not exist, terminating".format(workDir))
 
-  # --------------------------------------
   banner_import_problem()
-  # --------------------------------------
   scenario = read_scenario_from_dir(workDir)
   problem  = read_problem_name_from_dir(workDir)
   module   = importlib.import_module(problem)
   check_and_print_problem_summary(problem, module)
-  print("")
+  logging.info("")
 
   if "PodStandardGalerkin" in module.algos[scenario]:
 
@@ -241,4 +255,4 @@ if __name__ == '__main__':
     banner_pod_standard_galerkin()
     run_standard_pod_galerkin_full(workDir, problem, module, scenario, fomMeshPath)
   else:
-    print("Nothing to do here")
+    logging.info("Nothing to do here")

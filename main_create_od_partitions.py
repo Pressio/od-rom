@@ -1,24 +1,23 @@
 
 # standard modules
 from argparse import ArgumentParser
-import sys, os, importlib, pathlib, math
-import re, time, yaml, random, subprocess
+import sys, os, importlib, pathlib, logging
+import re, time, yaml, subprocess
 import numpy as np
-from decimal import Decimal
 
-from py_src.banners_and_prints import *
+from py_src.fncs_banners_and_prints import *
 
-from py_src.miscellanea import \
+from py_src.fncs_miscellanea import \
   find_full_mesh_and_ensure_unique
 
-from py_src.myio import \
+from py_src.fncs_myio import \
   read_scenario_from_dir, \
   read_problem_name_from_dir
 
-from py_src.directory_naming import \
+from py_src.fncs_directory_naming import \
   path_to_partition_info_dir
 
-from py_src.mesh_info_file_extractors import *
+from py_src.fncs_to_extract_from_mesh_info_file import *
 
 # -------------------------------------------------------------------
 def make_rectangular_uniform_partitions_1d(workDir, fullMeshPath, listOfTilings):
@@ -30,12 +29,12 @@ def make_rectangular_uniform_partitions_1d(workDir, fullMeshPath, listOfTilings)
   for nTilesX in listOfTilings:
     outDir = path_to_partition_info_dir(workDir, nTilesX, 1, "rectangularUniform")
     if os.path.exists(outDir):
-      print('Partition {} already exists'.format(outDir))
+      logging.info('Partition {} already exists'.format(outDir))
     else:
-      print('Generating partition files for \n{}'.format(outDir))
+      logging.info('Generating partition files for {}'.format(outDir))
       os.system('mkdir -p ' + outDir)
 
-      args = ("python3",    str(this_file_path)+'/py_src/partition_uniform.py',
+      args = ("python3",    str(this_file_path)+'/main_create_rectangular_partitions.py',
               "--wdir",     outDir,
               "--meshPath", fullMeshPath,
               "--tiles",    str(nTilesX),
@@ -56,12 +55,12 @@ def make_rectangular_uniform_partitions_2d(workDir, fullMeshPath, listOfTilings)
 
     outDir = path_to_partition_info_dir(workDir, nTilesX, nTilesY, "rectangularUniform")
     if os.path.exists(outDir):
-      print('Partition {} already exists'.format(outDir))
+      logging.info('Partition {} already exists'.format(outDir))
     else:
-      print('Generating partition files for \n{}'.format(outDir))
+      logging.info('Generating partition files for {}'.format(outDir))
       os.system('mkdir -p ' + outDir)
 
-      args = ("python3",    str(this_file_path)+'/py_src/partition_uniform.py',
+      args = ("python3",    str(this_file_path)+'/main_create_rectangular_partitions.py',
               "--wdir",     outDir,
               "--meshPath", fullMeshPath,
               "--tiles",    str(nTilesX), str(nTilesY),
@@ -77,12 +76,12 @@ def make_concentric_uniform_partitions_2d(workDir, fullMeshPath, listOfTilings):
   for nTiles in listOfTilings:
     outDir = path_to_partition_info_dir(workDir, nTiles, None, "concentricUniform")
     if os.path.exists(outDir):
-      print('Partition {} already exists'.format(outDir))
+      logging.info('Partition {} already exists'.format(outDir))
     else:
-      print('Generating partition files for \n{}'.format(outDir))
+      logging.info('Generating partition files for {}'.format(outDir))
       os.system('mkdir -p ' + outDir)
 
-      args = ("python3",    str(this_file_path)+'/py_src/partition_radial.py',
+      args = ("python3",    str(this_file_path)+'/main_create_radial_partitions.py',
               "--wdir",     outDir,
               "--meshPath", fullMeshPath,
               "--tiles",    str(nTiles),
@@ -91,10 +90,18 @@ def make_concentric_uniform_partitions_2d(workDir, fullMeshPath, listOfTilings):
       popen.wait()
       output = popen.stdout.read();
 
+# -------------------------------------------------------------------
+def setLogger():
+  dateFmt = '%Y-%m-%d' # %H:%M:%S'
+  # logFmt1 = '%(asctime)s %(levelname)s %(module)s - %(funcName)s: %(message)s'
+  logFmt2 = '%(levelname)-8s: [%(name)s] %(message)s'
+  logging.basicConfig(format=logFmt2, encoding='utf-8', level=logging.DEBUG)
+
 #==============================================================
 # main
 #==============================================================
 if __name__ == '__main__':
+  setLogger()
   banner_driving_script_info(os.path.basename(__file__))
 
   parser   = ArgumentParser()
@@ -106,14 +113,12 @@ if __name__ == '__main__':
   if not os.path.exists(workDir):
     sys.exit("Working dir {} does not exist, terminating".format(workDir))
 
-  # --------------------------------------
   banner_import_problem()
-  # --------------------------------------
   scenario = read_scenario_from_dir(workDir)
   problem  = read_problem_name_from_dir(workDir)
   module   = importlib.import_module(problem)
   check_and_print_problem_summary(problem, module)
-  print("")
+  logging.info("")
 
   triggers = ["PodOdGalerkin", \
               "PodOdProjectionError", \
@@ -146,5 +151,5 @@ if __name__ == '__main__':
          style == "concentricUniform":
         make_concentric_uniform_partitions_2d(workDir, fomMeshPath, listOfTilings)
   else:
-    print("Nothing to do here")
-  print("")
+    logging.info("Nothing to do here")
+  logging.info("")

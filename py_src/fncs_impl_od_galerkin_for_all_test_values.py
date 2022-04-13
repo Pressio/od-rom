@@ -1,29 +1,29 @@
 
 import numpy as np
-import sys, os, time
+import sys, os, time, logging
 
 try:
   import pressiodemoapps as pda
 except ImportError:
   raise ImportError("Unable to import pressiodemoapps")
 
-from .myio import \
+from .fncs_myio import \
   write_dic_to_yaml_file
 
-from .make_od_rom_initial_condition import *
+from .fncs_make_od_rom_initial_condition import *
 
-from .miscellanea import \
+from .fncs_miscellanea import \
   get_run_id, \
   find_all_partitions_info_dirs, \
   compute_total_modes_across_all_tiles
 
-from .directory_naming import \
+from .fncs_directory_naming import \
   string_identifier_from_partition_info_dir
 
-from .odrom_gappy_class import *
-from .odrom_masked_gappy_class import *
-from .observer import RomObserver
-from .odrom_time_integrators import *
+from .class_odrom_gappy import *
+from .class_odrom_gappy_masked import *
+from .class_observer_rom import RomObserver
+from .fncs_time_integration import *
 
 # -------------------------------------------------------------------
 def run_hr_od_galerkin_for_all_test_values(workDir, problem, \
@@ -34,6 +34,7 @@ def run_hr_od_galerkin_for_all_test_values(workDir, problem, \
                                            energyValue, modesPerTileDic, \
                                            setId, smKeywordForDirName,
                                            algoNameForDirName):
+  logger = logging.getLogger(__name__)
 
   # store various things
   romSizeOverAllPartitions = compute_total_modes_across_all_tiles(modesPerTileDic)
@@ -63,9 +64,9 @@ def run_hr_od_galerkin_for_all_test_values(workDir, problem, \
 
     # check outdir, make and run if needed
     if os.path.exists(outDir):
-      print('{} already exists'.format(outDir))
+      logger.info('{} already exists'.format(os.path.basename(outDir)))
     else:
-      print("Running odrom in {}".format(os.path.basename(outDir)))
+      logger.info("Running odrom in {}".format(os.path.basename(outDir)))
       os.system('mkdir -p ' + outDir)
 
       romRunDic    = module.base_dic[scenario]['odrom'].copy()
@@ -121,7 +122,7 @@ def run_hr_od_galerkin_for_all_test_values(workDir, problem, \
 
       # construct odrom object
       fomFullMeshTotalDofs = fomMeshObj.stencilMeshSize()*module.numDofsPerCell
-      print(fomFullMeshTotalDofs)
+      logger.info(fomFullMeshTotalDofs)
       odRomObj = OdRomGappy(appObjForRom, module.dimensionality, \
                             module.numDofsPerCell, partInfoDir, \
                             modesPerTileDic, odromSampleMeshPath, \
@@ -165,7 +166,7 @@ def run_hr_od_galerkin_for_all_test_values(workDir, problem, \
       obsO(numSteps, romState)
 
       elapsed = time.time() - pTimeStart
-      print("elapsed = {}".format(elapsed))
+      logger.info("elapsed = {}".format(elapsed))
       f = open(outDir+"/timing.txt", "w")
       f.write(str(elapsed))
       f.close()
@@ -190,6 +191,8 @@ def run_masked_gappy_od_galerkin_for_all_test_values(workDir, problem, \
                                                      energyValue, \
                                                      modesPerTileDic, \
                                                      setId, smKeywordForDirName):
+  logger = logging.getLogger(__name__)
+
   # store various things
   romSizeOverAllPartitions = compute_total_modes_across_all_tiles(modesPerTileDic)
   meshObj = pda.load_cellcentered_uniform_mesh(fomMeshPath)
@@ -215,9 +218,9 @@ def run_masked_gappy_od_galerkin_for_all_test_values(workDir, problem, \
 
     # check outdir, make and run if needed
     if os.path.exists(outDir):
-      print('{} already exists'.format(outDir))
+      logger.info('{} already exists'.format(os.path.basename(outDir)))
     else:
-      print("Running odrom in {}".format(os.path.basename(outDir)))
+      logger.info("Running odrom in {}".format(os.path.basename(outDir)))
       os.system('mkdir -p ' + outDir)
 
       romRunDic    = module.base_dic[scenario]['odrom'].copy()
@@ -252,7 +255,7 @@ def run_masked_gappy_od_galerkin_for_all_test_values(workDir, problem, \
         if usingIcAsRefState else np.array([None])
 
       fomFullMeshTotalDofs = meshObj.stencilMeshSize()*module.numDofsPerCell
-      print(fomFullMeshTotalDofs)
+      logger.info(fomFullMeshTotalDofs)
       odRomObj = OdRomMaskedGappy(appObj, module.dimensionality, \
                                   module.numDofsPerCell, partInfoDir, \
                                   modesPerTileDic, odromSampleMeshPath, \
@@ -292,7 +295,7 @@ def run_masked_gappy_od_galerkin_for_all_test_values(workDir, problem, \
       obsO(numSteps, romState)
 
       elapsed = time.time() - pTimeStart
-      print("elapsed = {}".format(elapsed))
+      logger.info("elapsed = {}".format(elapsed))
       f = open(outDir+"/timing.txt", "w")
       f.write(str(elapsed))
       f.close()

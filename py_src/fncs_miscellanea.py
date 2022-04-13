@@ -2,8 +2,11 @@
 import numpy as np
 import sys, os, re, yaml
 
-from .directory_naming import \
+from .fncs_directory_naming import \
   string_identifier_from_partition_info_dir
+
+from .fncs_cumulative_energy import \
+  compute_cumulative_energy
 
 # ----------------------------------------------------------------
 def str2bool(v):
@@ -104,3 +107,29 @@ def make_modes_per_tile_dic_with_const_modes_count(nTiles, modeCount):
 # -------------------------------------------------------------------
 def compute_total_modes_across_all_tiles(modesPerTileDic):
   return np.sum(list(modesPerTileDic.values()))
+
+# -------------------------------------------------------------------
+def find_modes_for_full_domain_from_target_energy(module, scenario, podDir, energy):
+  singValues = np.loadtxt(podDir+'/sva_state_p_0')
+  return compute_cumulative_energy(singValues, energy)
+
+
+# -------------------------------------------------------------------
+def find_modes_per_tile_from_target_energy(module, scenario, podDir, energy):
+  def get_tile_id(stringIn):
+    return int(stringIn.split('_')[-1])
+
+  modesPerTileDic = {}
+  # find all sing values files
+  singValsFiles = [podDir+'/'+f for f in os.listdir(podDir) \
+                   if "sva_state" in f]
+  # sort based on the tile id
+  singValsFiles = sorted(singValsFiles, key=get_tile_id)
+
+  for it in singValsFiles:
+    singValues = np.loadtxt(it)
+    tileId = get_tile_id(it)
+    K = compute_cumulative_energy(singValues, energy)
+    modesPerTileDic[tileId] = max(K, module.odrom_min_num_modes_per_tile[scenario])
+
+  return modesPerTileDic

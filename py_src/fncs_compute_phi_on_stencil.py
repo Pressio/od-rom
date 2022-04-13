@@ -1,14 +1,15 @@
 
 import numpy as np
-import sys, os, time
+import sys, os, time, logging
 from scipy import linalg as scipyla
 
-from .myio import load_basis_from_binary_file
+from .fncs_myio import load_basis_from_binary_file
 
 # -------------------------------------------------------------------
 def compute_phi_on_stencil(outDir, partitionInfoDir, \
                            statePodDir, sampleMeshDir, \
                            modesPerTileDic, numDofsPerCell):
+  logger = logging.getLogger(__name__)
 
   nTiles = len(modesPerTileDic)
   maxNumRows = 0

@@ -2,7 +2,7 @@
 import numpy as np
 import sys, os, re, yaml
 
-from .miscellanea import get_run_id
+from .fncs_miscellanea import get_run_id
 
 # -------------------------------------------------------------------
 def find_fom_train_dirs_for_target_set_of_indices(workDir, trainIndices):

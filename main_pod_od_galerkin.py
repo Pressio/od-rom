@@ -1,7 +1,7 @@
 
 # standard modules
 from argparse import ArgumentParser
-import sys, os, importlib, subprocess
+import sys, os, importlib, subprocess, logging
 import numpy as np
 from scipy import linalg as scipyla
 
@@ -10,16 +10,17 @@ try:
 except ImportError:
   raise ImportError("Unable to import pressiodemoapps")
 
-from py_src.banners_and_prints import *
+from py_src.fncs_banners_and_prints import *
 
-from py_src.miscellanea import \
+from py_src.fncs_miscellanea import \
   find_full_mesh_and_ensure_unique,\
   get_run_id, \
   find_all_partitions_info_dirs, \
   make_modes_per_tile_dic_with_const_modes_count,\
-  compute_total_modes_across_all_tiles
+  compute_total_modes_across_all_tiles, \
+  find_modes_per_tile_from_target_energy
 
-from py_src.myio import \
+from py_src.fncs_myio import \
   read_scenario_from_dir, \
   read_problem_name_from_dir,\
   load_fom_state_snapshot_matrix, \
@@ -27,18 +28,18 @@ from py_src.myio import \
   load_basis_from_binary_file, \
   write_dic_to_yaml_file
 
-from py_src.directory_naming import \
+from py_src.fncs_directory_naming import \
   path_to_partition_info_dir, \
   path_to_state_pod_data_dir, \
   string_identifier_from_partition_info_dir, \
   path_to_partition_based_full_mesh_dir
 
-from py_src.mesh_info_file_extractors import *
+from py_src.fncs_to_extract_from_mesh_info_file import *
 
-from py_src.make_od_rom_initial_condition import *
-from py_src.odrom_full_class import *
-from py_src.observer import RomObserver
-from py_src.odrom_time_integrators import *
+from py_src.fncs_make_od_rom_initial_condition import *
+from py_src.class_odrom_full import *
+from py_src.class_observer_rom import RomObserver
+from py_src.fncs_time_integration import *
 
 # -------------------------------------------------------------------
 def make_full_mesh_for_odrom_using_partition_based_indexing(workDir, pdaDir, \
@@ -64,8 +65,9 @@ def make_full_mesh_for_odrom_using_partition_based_indexing(workDir, pdaDir, \
     stringIdentifier = string_identifier_from_partition_info_dir(partitionInfoDirIt)
     outDir = path_to_partition_based_full_mesh_dir(workDir, stringIdentifier)
     if os.path.exists(outDir):
-      print('Partition-based full mesh dir {} already exists'.format(outDir))
+      logging.info('Partition-based full mesh dir {} already exists'.format(os.path.basename(outDir)))
     else:
+      logging.info('Generating partition-based FULL mesh in: {}'.format(outDir))
       os.system('mkdir -p ' + outDir)
 
       # to make the mesh, I need to make an array of gids
@@ -73,8 +75,6 @@ def make_full_mesh_for_odrom_using_partition_based_indexing(workDir, pdaDir, \
       gids = np.arange(0, totalCells)
       np.savetxt(outDir+'/sample_mesh_gids.dat', gids, fmt='%8i')
 
-      print('Generating partition-based FULL mesh in:')
-      print(' {}'.format(outDir))
       meshScriptsDir = pdaDir + "/meshing_scripts"
       args = ("python3", meshScriptsDir+'/create_sample_mesh.py',
               "--fullMeshDir", fomMesh,
@@ -84,7 +84,7 @@ def make_full_mesh_for_odrom_using_partition_based_indexing(workDir, pdaDir, \
       popen  = subprocess.Popen(args, stdout=subprocess.PIPE);
       popen.wait()
       output = popen.stdout.read();
-      print(output)
+      logging.debug(output)
 
 # -------------------------------------------------------------------
 def run_full_od_galerkin_for_all_test_values(workDir, problem, \
@@ -131,9 +131,9 @@ def run_full_od_galerkin_for_all_test_values(workDir, problem, \
 
     # check outdir, make and run if needed
     if os.path.exists(outDir):
-      print('{} already exists'.format(outDir))
+      logging.info('{} already exists'.format(os.path.basename(outDir)))
     else:
-      print("Running odrom in {}".format(os.path.basename(outDir)))
+      logging.info("Running odrom in {}".format(os.path.basename(outDir)))
       os.system('mkdir -p ' + outDir)
       romRunDic    = module.base_dic[scenario]['odrom'].copy()
       coeffDic     = module.base_dic[scenario]['physicalCoefficients'].copy()
@@ -227,7 +227,7 @@ def run_full_od_galerkin_for_all_test_values(workDir, problem, \
       obsO(numSteps, romState)
 
       elapsed = time.time() - pTimeStart
-      print("elapsed = {}".format(elapsed))
+      logging.info("elapsed = {}".format(elapsed))
       f = open(outDir+"/timing.txt", "w")
       f.write(str(elapsed))
       f.close()
@@ -237,7 +237,7 @@ def run_full_od_galerkin_for_all_test_values(workDir, problem, \
       # reconstruct final state
       odRomObj.reconstructFomStateFullMeshOrdering(romState)
       np.savetxt(outDir+"/y_rec_final.txt", odRomObj.viewFomState())
-      print("")
+    logging.info("")
 
 
 # -------------------------------------------------------------------
@@ -322,10 +322,18 @@ def run_od_pod_galerkin_full(workDir, problem, module, \
           sys.exit('run_od_pod_galerkin_full: invalid modeSettingPolicy = {}'.format(modeSettingIt_key))
 
 
+# -------------------------------------------------------------------
+def setLogger():
+  dateFmt = '%Y-%m-%d' # %H:%M:%S'
+  # logFmt1 = '%(asctime)s %(levelname)s %(module)s - %(funcName)s: %(message)s'
+  logFmt2 = '%(levelname)-8s: [%(name)s] %(message)s'
+  logging.basicConfig(format=logFmt2, encoding='utf-8', level=logging.DEBUG)
+
 #==============================================================
 # main
 #==============================================================
 if __name__ == '__main__':
+  setLogger()
   banner_driving_script_info(os.path.basename(__file__))
 
   parser   = ArgumentParser()
@@ -346,7 +354,7 @@ if __name__ == '__main__':
   problem  = read_problem_name_from_dir(workDir)
   module   = importlib.import_module(problem)
   check_and_print_problem_summary(problem, module)
-  print("")
+  logging.info("")
 
   # before we move on, we need to ensure that in workDir
   # there is a unique FULL mesh. This is because the mesh is specified
@@ -377,4 +385,4 @@ if __name__ == '__main__':
     run_od_pod_galerkin_full(workDir, problem, module, scenario, fomMeshPath)
 
   else:
-    print("Nothing to do here")
+    logging.info("Nothing to do here")

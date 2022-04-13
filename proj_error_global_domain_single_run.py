@@ -3,10 +3,10 @@ from argparse import ArgumentParser
 import sys, os
 import numpy as np
 
-from py_src.myio import *
-from py_src.miscellanea import get_run_id, str2bool
-from py_src.yaml_input_extractors import *
-from py_src.mesh_info_file_extractors import *
+from py_src.fncs_myio import *
+from py_src.fncs_miscellanea import get_run_id, str2bool
+from py_src.fncs_to_extract_from_yaml_input import *
+from py_src.fncs_to_extract_from_mesh_info_file import *
 
 #==============================================================
 # main
@@ -46,6 +46,16 @@ if __name__ == '__main__':
   phi     = load_basis_from_binary_file(phiFile)[:,0:numModes]
   tmpY    = np.dot(phi.transpose(), fomStates)
   fomStatesReconstructed = np.dot(phi, tmpY)
+
+  # compute space-time errorw
+  stErrs = []
+  fomSflat = fomStates.flatten('F')
+  approxSflat = fomStatesReconstructed.flatten('F')
+  error    = approxSflat-fomSflat
+  stErrs.append( np.linalg.norm(error)/np.linalg.norm(fomSflat) )
+  stErrs.append( np.linalg.norm(error, ord=1)/np.linalg.norm(fomSflat, ord=1) )
+  stErrs.append( np.linalg.norm(error, ord=np.inf)/np.linalg.norm(fomSflat, ord=np.inf) )
+  np.savetxt(workDir+"/errors_space_time.txt", np.array(stErrs))
 
   # each column in fomStates and fomStatesReconstructed contains one time step
   numSteps = fomStates.shape[1]

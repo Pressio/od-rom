@@ -1,8 +1,8 @@
 
 import numpy as np
 from scipy import linalg
-import time, math
-from .myio import load_basis_from_binary_file
+import time, math, logging
+from .fncs_myio import load_basis_from_binary_file
 
 class OdRomMaskedGappy:
   def __init__(self,
@@ -10,6 +10,7 @@ class OdRomMaskedGappy:
                partInfoDir, modesDicIn, sampleMeshPath,\
                podDir, projectorDir, \
                refState, fullMeshTotalDofs):
+    logger = logging.getLogger(__name__)
 
     self.physDim_  = physDim
     self.ndpc_     = numDofsPerCell
@@ -19,7 +20,7 @@ class OdRomMaskedGappy:
     self.modesDic_ = modesDicIn
     self.nTiles_   = len(modesDicIn.keys())
     self.totalModesCount_ = np.sum(list(self.modesDic_.values()))
-    print("self.totalModesCount_ = {}".format(self.totalModesCount_))
+    logger.debug("self.totalModesCount_ = {}".format(self.totalModesCount_))
 
     self.fomState_ = np.zeros(fullMeshTotalDofs)
     self.fomVelo_  = np.zeros(fullMeshTotalDofs)

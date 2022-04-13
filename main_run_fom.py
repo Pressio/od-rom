@@ -1,24 +1,21 @@
 
-# standard modules
 from argparse import ArgumentParser
-import sys, os, importlib, pathlib, math
-import re, time, yaml, random, subprocess
+import sys, os, importlib, time, subprocess, logging
+import math
 import numpy as np
-from scipy import linalg as scipyla
 from decimal import Decimal
-from scipy import optimize as sciop
 
 try:
   import pressiodemoapps as pda
 except ImportError:
   raise ImportError("Unable to import pressiodemoapps")
 
-from py_src.banners_and_prints import \
+from py_src.fncs_banners_and_prints import \
   banner_driving_script_info, \
   banner_import_problem, check_and_print_problem_summary, \
   banner_make_fom_mesh, banner_fom_train, banner_fom_test
-from py_src.myio import *
-from py_src.observer import FomObserver
+from py_src.fncs_myio import *
+from py_src.class_observer_fom import FomObserver
 
 #==============================================================
 # functions
@@ -49,9 +46,9 @@ def make_fom_mesh_if_not_existing(workDir, problem, \
 
   # now, generate mesh if needed
   if os.path.exists(outDir):
-    print('{} already exists'.format(outDir))
+    logging.info('{} already exists'.format(outDir))
   else:
-    print('Generating mesh {}'.format(outDir))
+    logging.info('Generating mesh {}'.format(outDir))
     popen  = subprocess.Popen(meshArgs, stdout=subprocess.PIPE);
     popen.wait()
     output = popen.stdout.read();
@@ -68,12 +65,13 @@ def find_full_mesh_and_ensure_unique(workDir):
                    # this string otherwise we pick up other things
                    if "full_mesh" == os.path.basename(d)[0:9]]
   if len(fomFullMeshes) != 1:
-    em = "Error: I found multiple full meshes:\n"
+    em = "I found multiple full meshes:\n"
     for it in fomFullMeshes:
-      em += it + "\n"
+      em += "   " + it + "\n"
     em += "inside the workDir = {} \n".format(workDir)
     em += "You can only have a single FULL mesh the working directory."
-    sys.exit(em)
+    logging.error(em)
+    sys.exit()
   return fomFullMeshes[0]
 
 # ----------------------------------------------------------------
@@ -84,7 +82,7 @@ def run_single_fom(runDir, appObj, dic):
   rhsSamplingFreq   = int(dic['velocitySamplingFreq'])
   finalTime         = float(dic['finalTime'])
   numSteps          = int(round(Decimal(finalTime)/Decimal(dt), 8))
-  print("numSteps = ", numSteps)
+  logging.debug("numSteps = {}".format(numSteps))
   dic['numSteps'] = numSteps
 
   # write to yaml the dic to save info for later
@@ -117,7 +115,7 @@ def run_single_fom(runDir, appObj, dic):
   obsO(numSteps, yn, tmpvelo)
 
   elapsed = time.time() - start
-  print("elapsed = {}".format(elapsed))
+  logging.debug("elapsed = {}".format(elapsed))
   f = open(runDir+"/timing.txt", "w")
   f.write(str(elapsed))
   f.close()
@@ -180,29 +178,31 @@ def run_foms(workDir, problem, module, scenario, \
     runDir = workDir + "/fom_"+testOrTrainString+"_"+str(k)
     if not os.path.exists(runDir):
       os.makedirs(runDir)
-      print("Doing FOM run for {}".format(runDir))
+      logging.info("Running FOM {}".format(runDir))
       run_single_fom(runDir, fomObj, fomDic)
     else:
-      print("{} already exists".format(runDir))
+      logging.info("{} already exists".format(runDir))
 
+# -------------------------------------------------------------------
+def setLogger():
+  dateFmt = '%Y-%m-%d' # %H:%M:%S'
+  # logFmt1 = '%(asctime)s %(levelname)s %(module)s - %(funcName)s: %(message)s'
+  logFmt2 = '%(levelname)-8s: [%(name)s] %(message)s'
+  logging.basicConfig(format=logFmt2, encoding='utf-8', level=logging.DEBUG)
 
 #==============================================================
 # main
 #==============================================================
 if __name__ == '__main__':
+  setLogger()
   banner_driving_script_info(os.path.basename(__file__))
 
+  # read args
   parser   = ArgumentParser()
   parser.add_argument("--wdir", dest="workdir", required=True)
   parser.add_argument("--problem", dest="problem", required=True)
   parser.add_argument("-s", dest="scenario", type=int,  required=True)
   parser.add_argument("--pdadir", dest="pdadir", required=True)
-
-  # meshSize is optional because one could directly
-  # specify it inside base_dic of the target problem
-  parser.add_argument("--mesh", nargs='+', dest="mesh", \
-                      type=int, required=False)
-
   args     = parser.parse_args()
   workDir  = args.workdir
   pdaDir   = args.pdadir
@@ -210,17 +210,14 @@ if __name__ == '__main__':
   scenario = args.scenario
 
   if not os.path.exists(workDir):
-    print("Working dir {} does not exist, creating it".format(workDir))
+    logging.info("{} does not exist, creating it".format(workDir))
     os.system('mkdir -p ' + workDir)
-    print("")
 
   # write scenario id, problem to file
   write_scenario_to_file(scenario, workDir)
   write_problem_name_to_file(problem, workDir)
 
-  # --------------------------------------
   banner_import_problem()
-  # --------------------------------------
   module = importlib.import_module(problem)
   check_and_print_problem_summary(problem, module)
   print("")
@@ -231,47 +228,19 @@ if __name__ == '__main__':
   if scenario not in valid_scenarios_ids:
     sys.exit("Scenario = {} is invalid for the target problem".format(scenario))
 
-  # verify dimensionality
-  if module.dimensionality not in [1,2]:
-    em = "Invalid dimensionality = {}".format(module.dimensionality)
-    sys.exit(em)
-
   # --------------------------------------
   banner_make_fom_mesh()
-  # --------------------------------------
-  # mesh size can be either specified via cmd line
-  # or in the base_dic inside module.
-  # We prioritize base_dic: if mesh is found there use that.
-  meshSizeToUse = []
-  if "meshSize" in module.base_dic[scenario]["fom"]:
-    meshSizeToUse = module.base_dic[scenario]["fom"]["meshSize"]
-  else:
-    if args.mesh == None:
-      emsg = "Since there is no meshSize entry in the base_dic"
-      emsg += "of scenario = {} for problem = {}\n".format(scenario, problem)
-      emsg += "I checked the cmd line arg, but did not find a valid --meshSize ... \n"
-      emsg += "You must either set it inside the base_dic or via cmd line arg."
-      sys.exit(emsg)
-    else:
-      meshSizeToUse = args.meshSize
-
+  meshSize = module.base_dic[scenario]["fom"]["meshSize"]
   make_fom_mesh_if_not_existing(workDir, problem, module, \
-                                scenario, pdaDir, meshSizeToUse)
+                                scenario, pdaDir, meshSize)
   # before moving on, ensure that in workDir there is a UNIQUE FULL mesh.
   # Because the mesh must be unique for a scenario.
   # If one wants to run for a different mesh, then they have to
   # run this script again with a different working directory
   fomMeshPath = find_full_mesh_and_ensure_unique(workDir)
-  print("")
 
-  # --------------------------------------
   banner_fom_train()
-  # --------------------------------------
   run_foms(workDir, problem, module, scenario, "train", fomMeshPath)
-  print("")
 
-  # --------------------------------------
   banner_fom_test()
-  # --------------------------------------
   run_foms(workDir, problem, module, scenario, "test", fomMeshPath)
-  print("")

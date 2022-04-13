@@ -1,14 +1,15 @@
 
-import time, math
+import time, math, logging
 import numpy as np
 from scipy import linalg
-from .myio import load_basis_from_binary_file
+from .fncs_myio import load_basis_from_binary_file
 
 class OdRomFull:
   def __init__(self, \
                fomObj, physDim, numDofsPerCell, \
                partInfoDir, modesDicIn, podDir, \
                refStateFullMeshOrdering,  refStateForOdRomAlgo):
+    logger = logging.getLogger(__name__)
 
     # physical dimensions and dofs/cell
     self.physDim_ = physDim
@@ -22,7 +23,7 @@ class OdRomFull:
     self.nTiles_   = len(modesDicIn.keys())
     # count all mode count within each tile
     self.totalModesCount_ = np.sum(list(self.modesDic_.values()))
-    print("self.totalModesCount_ = {}".format(self.totalModesCount_))
+    logger.debug("self.totalModesCount_ = {}".format(self.totalModesCount_))
 
     fomTotalDofs   = fomObj.totalDofStencilMesh()
     self.fomState_ = np.zeros(fomTotalDofs)

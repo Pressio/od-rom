@@ -1,44 +1,45 @@
 
 # standard modules
 from argparse import ArgumentParser
-import sys, os, importlib, subprocess
+import sys, os, importlib, subprocess, logging
+import random
 import numpy as np
 from scipy import linalg as scipyla
 
-from py_src.banners_and_prints import *
+from py_src.fncs_banners_and_prints import *
 
-from py_src.miscellanea import \
+from py_src.fncs_miscellanea import \
   find_full_mesh_and_ensure_unique,\
   get_run_id, \
   find_all_partitions_info_dirs
 
-from py_src.myio import \
+from py_src.fncs_myio import \
   read_scenario_from_dir, \
   read_problem_name_from_dir,\
   load_fom_state_snapshot_matrix, \
   load_fom_rhs_snapshot_matrix, \
   load_basis_from_binary_file
 
-from py_src.directory_naming import \
+from py_src.fncs_directory_naming import \
   path_to_partition_info_dir, \
   path_to_od_sample_mesh_random, \
   path_to_od_sample_mesh_psampling, \
   path_to_rhs_pod_data_dir, \
   string_identifier_from_partition_info_dir
 
-from py_src.fom_run_dirs_detection import \
+from py_src.fncs_fom_run_dirs_detection import \
   find_fom_train_dirs_for_target_set_of_indices
 
-from py_src.mesh_info_file_extractors import *
+from py_src.fncs_to_extract_from_mesh_info_file import *
 
-from py_src.svd import do_svd_py
+from py_src.fncs_svd import do_svd_py
 
 
 # -------------------------------------------------------------------
 def process_partitions_sample_mesh_files(pdaDir, fomMeshPath, sampleMeshDir, \
                                          partInfoDir, nTiles):
-   print('Generating sample mesh in:')
-   print(' {}'.format(sampleMeshDir))
+   logging.info('Generating sample mesh in:')
+   logging.info(' {}'.format(sampleMeshDir))
    owd = os.getcwd()
    meshScriptsDir = pdaDir + "/meshing_scripts"
    args = ("python3", meshScriptsDir+'/create_sample_mesh.py',
@@ -49,13 +50,13 @@ def process_partitions_sample_mesh_files(pdaDir, fomMeshPath, sampleMeshDir, \
    popen  = subprocess.Popen(args, stdout=subprocess.PIPE);
    popen.wait()
    output = popen.stdout.read();
-   print(output)
+   logging.info(output)
 
    # copy from sampleMeshDir/sm the generated stencil mesh gids file
    args = ("cp", sampleMeshDir+"/pda_sm/stencil_mesh_gids.dat", sampleMeshDir+"/stencil_mesh_gids.dat")
    popen  = subprocess.Popen(args, stdout=subprocess.PIPE); popen.wait()
    output = popen.stdout.read();
-   print(output)
+   logging.info(output)
 
    # now we can also figure out the stencil gids for each tile
    stencilGids = np.loadtxt(sampleMeshDir+"/pda_sm/stencil_mesh_gids.dat", dtype=int)
@@ -76,7 +77,7 @@ def compute_sample_mesh_random_od(workDir, module, scenario, pdaDir, fomMeshPath
   # get list of RANDOM sample mesh cases from module
   sampleMeshesList = [it for it in module.sample_meshes[scenario]\
                       if "random" in it]
-  print(sampleMeshesList)
+  logging.info(sampleMeshesList)
 
   # -------
   # loop 1: over all decompositions
@@ -102,9 +103,9 @@ def compute_sample_mesh_random_od(workDir, module, scenario, pdaDir, fomMeshPath
                                              partitionStringIdentifier, \
                                              fractionOfCellsNeeded)
       if os.path.exists(outDir):
-        print('{} already exists'.format(outDir))
+        logging.info('{} already exists'.format(outDir))
       else:
-        print('Generating RANDOM od sample mesh in {}'.format(outDir))
+        logging.info('Generating RANDOM od sample mesh in {}'.format(outDir))
         os.system('mkdir -p ' + outDir)
 
         # loop over tiles
@@ -115,7 +116,7 @@ def compute_sample_mesh_random_od(workDir, module, scenario, pdaDir, fomMeshPath
           myCellGids = np.loadtxt(myFile, dtype=int)
           myNumCells = len(myCellGids)
           mySampleMeshCount = int(myNumCells * fractionOfCellsNeeded)
-          print(" tileId = {:>5}, myNumCells = {:>5}, mySmCount = {:>5}".format(tileId, \
+          logging.debug(" tileId = {:>5}, myNumCells = {:>5}, mySmCount = {:>5}".format(tileId, \
                                                                                 myNumCells, \
                                                                                 mySampleMeshCount))
 
@@ -142,7 +143,7 @@ def compute_sample_mesh_psampling_od(workDir, module, scenario, pdaDir, fomMeshP
   # get list of sample mesh cases, filter only those having "psampling" in it
   sampleMeshesList = [it for it in module.sample_meshes[scenario]\
                       if "psampling" in it]
-  print(sampleMeshesList)
+  logging.info(sampleMeshesList)
 
   # -------
   # loop 1: over all decompositions
@@ -182,9 +183,9 @@ def compute_sample_mesh_psampling_od(workDir, module, scenario, pdaDir, fomMeshP
                                                   setId, fractionNeeded, \
                                                   whichDofToUseForFindingCells)
         if os.path.exists(outDir):
-          print('{} already exists'.format(outDir))
+          logging.info('{} already exists'.format(outDir))
         else:
-          print('Generating psampling OD sample mesh in: \n {}'.format(outDir))
+          logging.info('Generating psampling OD sample mesh in: \n {}'.format(outDir))
           os.system('mkdir -p ' + outDir)
 
           # loop over tiles
@@ -196,7 +197,7 @@ def compute_sample_mesh_psampling_od(workDir, module, scenario, pdaDir, fomMeshP
             myCellGids = np.loadtxt(myFile, dtype=int)
             myNumCells = len(myCellGids)
             mySampleMeshCount = int(myNumCells * fractionNeeded)
-            print(" tileId = {:>5}, myNumCells = {:>5}, mySmCount = {:>5}".format(tileId, \
+            logging.debug(" tileId = {:>5}, myNumCells = {:>5}, mySmCount = {:>5}".format(tileId, \
                                                                                   myNumCells, \
                                                                                   mySampleMeshCount))
 
@@ -205,7 +206,7 @@ def compute_sample_mesh_psampling_od(workDir, module, scenario, pdaDir, fomMeshP
             if myRhsPod.shape[1] < mySampleMeshCount:
               s1 = "Warning: psampling in tileId = {:>5}:".format(tileId)
               s1 += "not enough RHS modes, automatically reducing sample mesh count"
-              print(s1)
+              logging.debug(s1)
               mySampleMeshCount = myRhsPod.shape[1]-1
 
             Q,R,P = scipyla.qr(myRhsPod[:,0:mySampleMeshCount].transpose(), pivoting=True)
@@ -227,11 +228,18 @@ def compute_sample_mesh_psampling_od(workDir, module, scenario, pdaDir, fomMeshP
           process_partitions_sample_mesh_files(pdaDir, fomMeshPath, \
                                                outDir, partInfoDirIt, nTiles)
 
+# -------------------------------------------------------------------
+def setLogger():
+  dateFmt = '%Y-%m-%d' # %H:%M:%S'
+  # logFmt1 = '%(asctime)s %(levelname)s %(module)s - %(funcName)s: %(message)s'
+  logFmt2 = '%(levelname)-8s: [%(name)s] %(message)s'
+  logging.basicConfig(format=logFmt2, encoding='utf-8', level=logging.DEBUG)
 
 #==============================================================
 # main
 #==============================================================
 if __name__ == '__main__':
+  setLogger()
   parser   = ArgumentParser()
   parser.add_argument("--wdir", dest="workdir", required=True)
   parser.add_argument("--pdadir", dest="pdadir", required=True)
@@ -243,14 +251,12 @@ if __name__ == '__main__':
   if not os.path.exists(workDir):
     sys.exit("Working dir {} does not exist, terminating".format(workDir))
 
-  # --------------------------------------
   banner_import_problem()
-  # --------------------------------------
   scenario = read_scenario_from_dir(workDir)
   problem  = read_problem_name_from_dir(workDir)
   module   = importlib.import_module(problem)
   check_and_print_problem_summary(problem, module)
-  print("")
+  logging.info("")
 
   # before we move on, we need to ensure that in workDir
   # there is a unique FULL mesh. This is because the mesh is specified
@@ -275,5 +281,5 @@ if __name__ == '__main__':
       compute_sample_mesh_psampling_od(workDir, module, scenario, pdaDir, fomMeshPath)
 
   else:
-    print("skipping")
-  print("")
+    logging.info("skipping")
+  logging.info("")

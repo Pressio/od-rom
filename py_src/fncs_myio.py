@@ -1,6 +1,6 @@
 
 import numpy as np
-import sys, os, re, yaml
+import sys, os, re, yaml, logging
 
 # -------------------------------------------------------------------
 def write_scenario_to_file(scenarioId, outDir):
@@ -53,48 +53,52 @@ def load_basis_from_binary_file(lsvFile):
 def load_fom_state_snapshot_matrix(dataDirs, fomTotDofs, \
                                    numDofsPerCell, \
                                    subtractInitialCondition):
+  logger = logging.getLogger(__name__)
+
   M = np.zeros((0, fomTotDofs))
   for targetDirec in dataDirs:
-    print("reading data from {}".format(targetDirec))
+    logger.info("reading data from {}".format(targetDirec))
 
     data = np.fromfile(targetDirec+"/fom_snaps_state")
 
     numTimeSteps = int(np.size(data)/fomTotDofs)
     D  = np.reshape(data, (numTimeSteps, fomTotDofs))
     if subtractInitialCondition:
-      print("subtracting initial state")
+      logger.debug("subtracting initial state")
       IC = np.loadtxt(targetDirec+"/initial_state.txt")
       for i in range(D.shape[0]):
         D[i,:] = D[i,:] - IC
 
     M = np.append(M, D, axis=0)
 
-  print("state snapshots: shape  : ", M.T.shape)
-  print("state snapshots: min/max: ", np.min(M), np.max(M))
+  logger.debug("state snapshots: shape  : {}".format(M.T.shape))
+  logger.debug("state snapshots: min/max: {} {}".format(np.min(M), np.max(M)))
   return M.T
 
 # -------------------------------------------------------------------
 def load_fom_rhs_snapshot_matrix(dataDirs, fomTotDofs, numDofsPerCell):
+  logger = logging.getLogger(__name__)
   M = np.zeros((0, fomTotDofs))
   for targetDirec in dataDirs:
-    print("reading data from {}".format(targetDirec))
+    logger.info("reading data from {}".format(targetDirec))
 
     data = np.fromfile(targetDirec+"/fom_snaps_rhs")
     numTimeSteps = int(np.size(data)/fomTotDofs)
     D = np.reshape(data, (numTimeSteps, fomTotDofs))
     M = np.append(M, D, axis=0)
 
-  print("rhs snapshots: shape    : ", M.T.shape)
-  print("rhs snapshots: min/max  : ", np.min(M), np.max(M))
+  logger.debug("rhs snapshots: shape  : {}".format(M.T.shape))
+  logger.debug("rhs snapshots: min/max: {} {}".format(np.min(M), np.max(M)))
   return M.T
 
 # -------------------------------------------------------------------
 def load_rom_state_snapshot_matrix(runDir, totalNumModes):
-  print("reading data from {}".format(runDir))
+  logger = logging.getLogger(__name__)
+  logger.info("reading data from {}".format(runDir))
   data = np.fromfile(runDir+"/rom_snaps_state")
   numTimeSteps = int(np.size(data)/totalNumModes)
   M = np.reshape(data, (numTimeSteps, totalNumModes))
   #print("A= ", M.flags['C_CONTIGUOUS'])
-  print("rom state snapshots: shape  : ", M.T.shape)
-  print("rom state snapshots: min/max: ", np.min(M), np.max(M))
+  logger.debug("rom state snapshots: shape  : {}".format(M.T.shape))
+  logger.debug("rom state snapshots: min/max: {} {}".format(np.min(M), np.max(M)))
   return M.T

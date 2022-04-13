@@ -1,13 +1,15 @@
 
-import time, math
+import time, math, logging
 import numpy as np
 from scipy import linalg
-from .myio import load_basis_from_binary_file
+from .fncs_myio import load_basis_from_binary_file
 
 class StandardRomFull:
   def __init__(self, \
                fomObj, physDim, numDofsPerCell, \
                numModes, podDir, refState):
+
+    logger = logging.getLogger(__name__)
 
     # physical dimensions and dofs/cell
     self.physDim_ = physDim
@@ -17,7 +19,7 @@ class StandardRomFull:
     self.refState_ = refState
 
     self.numModes_ = numModes
-    print("self.totalModesCount_ = {}".format(self.numModes_))
+    logger.info("self.totalModesCount_ = {}".format(self.numModes_))
 
     fomTotalDofs   = fomObj.totalDofStencilMesh()
     self.fomState_ = np.zeros(fomTotalDofs)

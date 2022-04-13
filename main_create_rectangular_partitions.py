@@ -18,13 +18,13 @@ def find_dimensionality_from_info_file(workDir):
   assert(strings)
   return int(strings.group().split()[1])
 
+# def _ij_from_gid(gid):
+#   j = int(gid)/int(nx)
+#   i = gid % nx
+#   return int(i), int(j)
+
 def _gid_from_ij(i,j, nx_, ny_):
   return int( (j%ny_)*nx_ + i%nx_ )
-
-def _ij_from_gid(gid):
-  j = int(gid)/int(nx)
-  i = gid % nx
-  return int(i), int(j)
 
 def _mapCellGidsToStateDofsGids(cellGidsDic, numDofsPerCell):
   d = {}
@@ -70,20 +70,20 @@ def _mapCellGidsToStateDofsGids(cellGidsDic, numDofsPerCell):
 
   return d
 
-def _mapCellGidsToPieces(numCellsPerBlockX, numCellsPerBlockY, npX, npY, nx, ny):
-  d = {}
-  # loop over all gids and map gids to patch
-  for j in range(ny):
-    for i in range(nx):
-      blockI = int(i/numCellsPerBlockX)
-      blockJ = int(j/numCellsPerBlockY)
-      blockGid = _gid_from_ij(blockI, blockJ, npX, npY)
-      cellGid  = _gid_from_ij(i,j, nx, ny)
-      if blockGid in d:
-        d[blockGid].append(cellGid)
-      else:
-        d[blockGid] = [cellGid]
-  return d
+# def _mapCellGidsToPieces(numCellsPerBlockX, numCellsPerBlockY, npX, npY, nx, ny):
+#   d = {}
+#   # loop over all gids and map gids to patch
+#   for j in range(ny):
+#     for i in range(nx):
+#       blockI = int(i/numCellsPerBlockX)
+#       blockJ = int(j/numCellsPerBlockY)
+#       blockGid = _gid_from_ij(blockI, blockJ, npX, npY)
+#       cellGid  = _gid_from_ij(i,j, nx, ny)
+#       if blockGid in d:
+#         d[blockGid].append(cellGid)
+#       else:
+#         d[blockGid] = [cellGid]
+#   return d
 
 def _create1d_new(totCellsX, xSplits, ndpc):
   blockSizes = {}
@@ -212,5 +212,7 @@ if __name__ == '__main__':
       np.savetxt(workDir+"/state_vec_rows_wrt_full_mesh_p_"+str(k)+".txt", \
                  np.array(v), fmt='%8d')
 
+  # ----------------------
   else:
+  # ----------------------
     sys.exit("invalid meshDim = {}".format(meshDim))

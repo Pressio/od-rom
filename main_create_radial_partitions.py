@@ -18,14 +18,6 @@ def find_dimensionality_from_info_file(workDir):
   assert(strings)
   return int(strings.group().split()[1])
 
-def _gid_from_ij(i,j, nx_, ny_):
-  return int( (j%ny_)*nx_ + i%nx_ )
-
-def _ij_from_gid(gid):
-  j = int(gid)/int(nx)
-  i = gid % nx
-  return int(i), int(j)
-
 def _mapCellGidsToStateDofsGids(cellGidsDic, numDofsPerCell):
   d = {}
 
@@ -118,14 +110,6 @@ if __name__ == '__main__':
     rs.append(ri)
     cellGidsDic[i-1] = np.where((np.sqrt(x**2 + y**2) >= rs[i-1]) & (np.sqrt(x**2 + y**2) < ri))[0]
   cellGidsDic[args.tiles-1] = np.where(np.sqrt(x**2 + y**2) > rs[-1])[0]
-
-  # rs = np.linspace(0.0, maxRadius, args.tiles).tolist()
-  # for it in range(1, args.tiles):
-  #   r0 = rs[it-1]
-  #   r1 = rs[it]
-  #   cellGidsDic[it-1] = np.where((np.sqrt(x**2 + y**2) > r0) & (np.sqrt(x**2 + y**2) < r1))[0]
-  #   print(len(cellGidsDic[it-1]))
-  # cellGidsDic[args.tiles-1] = np.where(np.sqrt(x**2 + y**2) > rs[-1])[0]
 
   stateDofsGidsDic = _mapCellGidsToStateDofsGids(cellGidsDic, ndpc)
   np.savetxt(workDir+"/ntiles.txt", \

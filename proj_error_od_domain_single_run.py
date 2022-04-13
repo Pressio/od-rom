@@ -3,10 +3,10 @@ from argparse import ArgumentParser
 import sys, os
 import numpy as np
 
-from py_src.myio import *
-from py_src.miscellanea import get_run_id, str2bool
-from py_src.yaml_input_extractors import *
-from py_src.mesh_info_file_extractors import *
+from py_src.fncs_myio import *
+from py_src.fncs_miscellanea import get_run_id, str2bool
+from py_src.fncs_to_extract_from_yaml_input import *
+from py_src.fncs_to_extract_from_mesh_info_file import *
 
 #==============================================================
 # main
@@ -64,6 +64,16 @@ if __name__ == '__main__':
     # update the index so that the span of the romState
     # in the next tile is correct
     romState_i += myK
+
+  # compute space-time errorw
+  stErrs = []
+  fomSflat = fomStates.flatten('F')
+  approxSflat = fomStatesReconstructed.flatten('F')
+  error = approxSflat-fomSflat
+  stErrs.append( np.linalg.norm(error)/np.linalg.norm(fomSflat) )
+  stErrs.append( np.linalg.norm(error, ord=1)/np.linalg.norm(fomSflat, ord=1) )
+  stErrs.append( np.linalg.norm(error, ord=np.inf)/np.linalg.norm(fomSflat, ord=np.inf) )
+  np.savetxt(workDir+"/errors_space_time.txt", np.array(stErrs))
 
   # compute error at each time step
   # each column in fomStates or approximation contains one step

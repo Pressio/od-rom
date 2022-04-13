@@ -1,10 +1,12 @@
 
 import numpy as np
-import sys, os, time
+import sys, os, time, logging
 from scipy import linalg as scipyla
 
 # -------------------------------------------------------------------
 def do_svd_py(mymatrix, lsvFile, svaFile):
+  logger = logging.getLogger(__name__)
+
   timing = np.zeros(1)
   start = time.time()
   U,S,_ = scipyla.svd(mymatrix, full_matrices=False, lapack_driver='gesdd')

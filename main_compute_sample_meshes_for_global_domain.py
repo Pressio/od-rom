@@ -2,7 +2,7 @@
 # standard modules
 from argparse import ArgumentParser
 import sys, os, importlib
-import re, time, yaml, random, subprocess
+import re, time, yaml, random, subprocess, logging
 import numpy as np
 from scipy import linalg as scipyla
 from scipy import optimize as sciop
@@ -13,30 +13,30 @@ from scipy import optimize as sciop
 # except ImportError:
 #   raise ImportError("Unable to import classes from pressiotools")
 
-from py_src.banners_and_prints import *
+from py_src.fncs_banners_and_prints import *
 
-from py_src.miscellanea import \
+from py_src.fncs_miscellanea import \
   find_full_mesh_and_ensure_unique
 
-from py_src.myio import \
+from py_src.fncs_myio import \
   read_scenario_from_dir, \
   read_problem_name_from_dir, \
   load_fom_rhs_snapshot_matrix, \
   load_basis_from_binary_file
 
-from py_src.directory_naming import \
+from py_src.fncs_directory_naming import \
   path_to_full_domain_sample_mesh_random, \
   path_to_full_domain_sample_mesh_psampling,\
   path_to_full_domain_rhs_pod_data_dir
 
-from py_src.mesh_info_file_extractors import *
+from py_src.fncs_to_extract_from_mesh_info_file import *
 
 # -------------------------------------------------------------------
 def compute_sample_mesh_random_full_domain(workDir, module, scenario, pdaDir, fomMeshPath):
   # get list of RANDOM sample mesh cases from module
   sampleMeshesList = [it for it in module.sample_meshes[scenario]\
                       if "random" in it]
-  print(sampleMeshesList)
+  logging.debug(sampleMeshesList)
 
   for sampleMeshCaseIt in sampleMeshesList:
     fractionOfCellsNeeded = sampleMeshCaseIt[1]
@@ -44,21 +44,19 @@ def compute_sample_mesh_random_full_domain(workDir, module, scenario, pdaDir, fo
     # create name of directory where to store the sample mesh
     outDir = path_to_full_domain_sample_mesh_random(workDir, fractionOfCellsNeeded)
     if os.path.exists(outDir):
-      print('{} already exists'.format(outDir))
+      logging.info('{} already exists'.format(outDir))
     else:
-      print('Generating RANDOM sample mesh in {}'.format(outDir))
+      logging.info('Generating random sample mesh in {}'.format(outDir))
       os.system('mkdir -p ' + outDir)
 
       fomNumCells = find_total_cells_from_info_file(fomMeshPath)
       sampleMeshCount = int(fomNumCells * fractionOfCellsNeeded)
       sample_mesh_gids = random.sample(range(0, fomNumCells), sampleMeshCount)
       sample_mesh_gids = np.sort(sample_mesh_gids)
-      print(" numCellsFullDomain = ", fomNumCells)
-      print(" sampleMeshSize     = ", sampleMeshCount)
+      logging.debug(" numCellsFullDomain = {}".format(fomNumCells))
+      logging.debug(" sampleMeshSize     = {}".format(sampleMeshCount))
       np.savetxt(outDir+'/sample_mesh_gids_p_0.txt', sample_mesh_gids, fmt='%8i')
 
-      print('Generating sample mesh in:')
-      print(' {}'.format(outDir))
       owd = os.getcwd()
       meshScriptsDir = pdaDir + "/meshing_scripts"
       args = ("python3", meshScriptsDir+'/create_sample_mesh.py',
@@ -68,7 +66,7 @@ def compute_sample_mesh_random_full_domain(workDir, module, scenario, pdaDir, fo
       popen  = subprocess.Popen(args, stdout=subprocess.PIPE);
       popen.wait()
       output = popen.stdout.read();
-      print(output)
+      logging.debug(output)
 
 
 # -------------------------------------------------------------------
@@ -76,7 +74,7 @@ def compute_sample_mesh_psampling_full_domain(workDir, module, scenario, pdaDir,
   # get list of sample mesh cases, filter only those having "psampling" in it
   sampleMeshesList = [it for it in module.sample_meshes[scenario]\
                       if "psampling" in it]
-  print(sampleMeshesList)
+  logging.debug(sampleMeshesList)
 
   # -------
   # loop 2: over all setIds
@@ -104,9 +102,9 @@ def compute_sample_mesh_psampling_full_domain(workDir, module, scenario, pdaDir,
       # name of where to generate files
       outDir = path_to_full_domain_sample_mesh_psampling(workDir, setId, fractionOfCellsNeeded)
       if os.path.exists(outDir):
-        print('{} already exists'.format(outDir))
+        logging.info('{} already exists'.format(outDir))
       else:
-        print('Generating psampling sample mesh in: \n {}'.format(outDir))
+        logging.info('Generating psampling sample mesh in: \n {}'.format(outDir))
         os.system('mkdir -p ' + outDir)
 
         fomNumCells = find_total_cells_from_info_file(fomMeshPath)
@@ -114,8 +112,7 @@ def compute_sample_mesh_psampling_full_domain(workDir, module, scenario, pdaDir,
         rhsPodFile = currRhsPodDir + "/lsv_rhs_p_0"
         myRhsPod = load_basis_from_binary_file(rhsPodFile)[whichDofToUseForFindingCells::module.numDofsPerCell]
         if myRhsPod.shape[1] < mySampleMeshCount:
-          print("Warning: psampling sample mesh for full domain")
-          print("         not enough rhs modes, automatically reducing sample mesh count")
+          logging.warning("Warning: psampling sample mesh for full domain, not enough rhs modes, automatically reducing sample mesh count")
           mySampleMeshCount = myRhsPod.shape[1]-1
 
         Q,R,P = scipyla.qr(myRhsPod[:,0:mySampleMeshCount].transpose(), pivoting=True)
@@ -123,8 +120,6 @@ def compute_sample_mesh_psampling_full_domain(workDir, module, scenario, pdaDir,
         np.savetxt(outDir+'/sample_mesh_gids_p_0.txt',\
                    mySampleMeshGidsWrtFullMesh, fmt='%8i')
 
-        print('Generating sample mesh in:')
-        print(' {}'.format(outDir))
         owd = os.getcwd()
         meshScriptsDir = pdaDir + "/meshing_scripts"
         args = ("python3", meshScriptsDir+'/create_sample_mesh.py',
@@ -134,13 +129,20 @@ def compute_sample_mesh_psampling_full_domain(workDir, module, scenario, pdaDir,
         popen  = subprocess.Popen(args, stdout=subprocess.PIPE);
         popen.wait()
         output = popen.stdout.read();
-        print(output)
+        logging.info(output)
 
+# -------------------------------------------------------------------
+def setLogger():
+  dateFmt = '%Y-%m-%d' # %H:%M:%S'
+  # logFmt1 = '%(asctime)s %(levelname)s %(module)s - %(funcName)s: %(message)s'
+  logFmt2 = '%(levelname)-8s: [%(name)s] %(message)s'
+  logging.basicConfig(format=logFmt2, encoding='utf-8', level=logging.DEBUG)
 
 #==============================================================
 # main
 #==============================================================
 if __name__ == '__main__':
+  setLogger()
   banner_driving_script_info(os.path.basename(__file__))
 
   parser   = ArgumentParser()
@@ -154,14 +156,12 @@ if __name__ == '__main__':
   if not os.path.exists(workDir):
     sys.exit("Working dir {} does not exist, terminating".format(workDir))
 
-  # --------------------------------------
   banner_import_problem()
-  # --------------------------------------
   scenario = read_scenario_from_dir(workDir)
   problem  = read_problem_name_from_dir(workDir)
   module   = importlib.import_module(problem)
   check_and_print_problem_summary(problem, module)
-  print("")
+  logging.info("")
 
   if "PodStandardGalerkinGappy" in module.algos[scenario]:
 
@@ -176,9 +176,11 @@ if __name__ == '__main__':
     sampleMeshesList = module.sample_meshes[scenario]
     if any(["random" in it for it in sampleMeshesList]):
       compute_sample_mesh_random_full_domain(workDir, module, scenario, pdaDir, fomMeshPath)
+      logging.info("")
 
     if any(["psampling" in it for it in sampleMeshesList]):
       compute_sample_mesh_psampling_full_domain(workDir, module, scenario, pdaDir, fomMeshPath)
+
   else:
-    print("Nothing to do here")
-  print("")
+    logging.info("Nothing to do here")
+  logging.info("")

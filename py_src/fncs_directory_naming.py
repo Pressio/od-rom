@@ -3,6 +3,31 @@ import numpy as np
 import sys, os, re, yaml
 
 # -------------------------------------------------------------------
+def path_to_full_domain_state_pod_data_dir(workDir, setId):
+  s1 = workDir + "/full_domain"
+  s2 = "full_state_pod_set_"+str(setId)
+  return s1 + "_" + s2
+
+# -------------------------------------------------------------------
+def path_to_full_domain_rhs_pod_data_dir(workDir, setId):
+  s1 = "/full_domain"
+  s2 = "full_rhs_pod_set_"+str(setId)
+  return workDir + s1 + "_" + s2
+
+# -------------------------------------------------------------------
+def path_to_full_domain_sample_mesh_random(workDir, fraction):
+  s1 = workDir + "/full_domain"
+  s2 = "sample_mesh_random_{:3.3f}".format(fraction)
+  return s1 + "_" + s2
+
+# -------------------------------------------------------------------
+def path_to_full_domain_sample_mesh_psampling(workDir, setId, fraction):
+  s1 = workDir + "/full_domain"
+  s2 = "sample_mesh_psampling_set_"+str(setId)
+  s3 = "fraction_{:3.3f}".format(fraction)
+  return s1 + "_" + s2 + "_" + s3
+
+# -------------------------------------------------------------------
 def path_to_partition_info_dir(workDir, npx, npy, style):
   s1 = workDir + "/od_info"
   if npy == None:
@@ -28,20 +53,8 @@ def path_to_state_pod_data_dir(workDir, partitioningKeyword, setId):
   return s1 + "_" + s2
 
 # -------------------------------------------------------------------
-def path_to_full_domain_state_pod_data_dir(workDir, setId):
-  s1 = workDir + "/full_domain"
-  s2 = "full_state_pod_set_"+str(setId)
-  return s1 + "_" + s2
-
-# -------------------------------------------------------------------
 def path_to_rhs_pod_data_dir(workDir, partitioningKeyword, setId):
   s1 = "/partition_based_"+partitioningKeyword
-  s2 = "full_rhs_pod_set_"+str(setId)
-  return workDir + s1 + "_" + s2
-
-# -------------------------------------------------------------------
-def path_to_full_domain_rhs_pod_data_dir(workDir, setId):
-  s1 = "/full_domain"
   s2 = "full_rhs_pod_set_"+str(setId)
   return workDir + s1 + "_" + s2
 
@@ -64,12 +77,6 @@ def path_to_od_sample_mesh_random(workDir, partitioningKeyword, fraction):
   return s1 + "_" + s2
 
 # -------------------------------------------------------------------
-def path_to_full_domain_sample_mesh_random(workDir, fraction):
-  s1 = workDir + "/full_domain"
-  s2 = "sample_mesh_random_{:3.3f}".format(fraction)
-  return s1 + "_" + s2
-
-# -------------------------------------------------------------------
 def path_to_od_sample_mesh_psampling(workDir, partitioningKeyword, setId, \
                                      fraction, dofToUseForFindingCells):
   s1 = workDir + "/partition_based_"+partitioningKeyword
@@ -79,29 +86,11 @@ def path_to_od_sample_mesh_psampling(workDir, partitioningKeyword, setId, \
   return s1 + "_" + s2 + "_" + s3 + "_" + s4
 
 # -------------------------------------------------------------------
-def path_to_full_domain_sample_mesh_psampling(workDir, setId, fraction):
-  s1 = workDir + "/full_domain"
-  s2 = "sample_mesh_psampling_set_"+str(setId)
-  s3 = "fraction_{:3.3f}".format(fraction)
-  return s1 + "_" + s2 + "_" + s3
-
-# -------------------------------------------------------------------
 def string_identifier_from_sample_mesh_dir(sampleMeshDir):
   if "sample_mesh_random" in sampleMeshDir:
     return "random_"+sampleMeshDir[-5:]
   elif "sample_mesh_psampling" in sampleMeshDir:
     return "psampling_"+sampleMeshDir[-22:]
-
-# # -------------------------------------------------------------------
-# def path_to_gappy_projector_dir(workDir, partitioningKeyword, \
-#                                 setId, energyValue, smKeyword):
-#   s1 = workDir + "/partition_based_"+partitioningKeyword
-#   s2 = "gappy_projector"
-#   s3 = str(energyValue)
-#   s4 = "using_"+smKeyword
-#   s5 = "set_"+ str(setId)
-#   sep = "_"
-#   return s1 + sep + s2 + sep + s3 + sep + s4 + sep + s5
 
 # -------------------------------------------------------------------
 def path_to_gappy_projector_dir(workDir, gappyPolicyName, \
