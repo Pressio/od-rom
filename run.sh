@@ -1,5 +1,7 @@
 #!/bin/bash
 
+set -e
+
 export PDADIR=$1
 export WDIR=$2
 export prob=$3
