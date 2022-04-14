@@ -59,19 +59,19 @@ def check_if_error_files_already_present(targetDir):
 def compute_errors_for_odrom_dir(workDir, romDir):
   logging.debug("\033[0;37;46mromDir     = {} {}".format(os.path.basename(romDir), color_resetter()))
 
-  # extract the runid from the rom dir
-  myRunId = get_run_id(romDir)
-
-  # find the fom test dir that matches the id
-  fomTestDir = find_fom_test_dir_with_target_id(workDir, myRunId)
-  logging.debug("\033[0;37;46mfomTestDir = {} {}".format(os.path.basename(fomTestDir), color_resetter()))
-
   # check if the rom dir already contains errors, if so exit
   if check_if_error_files_already_present(romDir):
     logging.info("errors already computed, leaving dir")
     return
 
+  # find the fom test dir that matches the target rom dir id
+  myRunId = get_run_id(romDir)
+  fomTestDir = find_fom_test_dir_with_target_id(workDir, myRunId)
+  logging.debug("\033[0;37;46mfomTestDir = {} {}".format(os.path.basename(fomTestDir), color_resetter()))
+
+  # -------------------------------------
   # load fom snapshots
+  # -------------------------------------
   fomMeshDir     = find_meshdir_from_input_file(fomTestDir)
   fomTotCells    = find_total_cells_from_info_file(fomMeshDir)
   numDofsPerCell = find_numdofspercell_from_input_file(fomTestDir)
@@ -80,17 +80,29 @@ def compute_errors_for_odrom_dir(workDir, romDir):
                                                   numDofsPerCell, False)
   assert(fomStates.flags['F_CONTIGUOUS'])
 
+  # -------------------------------------
+  # load rom states
+  # -------------------------------------
+  modesPerTile = np.loadtxt(romDir+"/modes_per_tile.txt", dtype=int)
+  totalModes = np.sum(modesPerTile)
+  numTiles   = len(modesPerTile)
+  romStates  = load_rom_state_snapshot_matrix(romDir, totalModes)
+  assert(romStates.flags['F_CONTIGUOUS'])
+
   # need to be careful because the rom and fom can have a different
-  # sampling frequency and different time step size.
-  # so we need to figure out what are the time steps collected by the fom
-  # and then the times collected by the rom and from that
-  # we can extract the right snapshot indices that we need to compare
-  # to compute the errors
+  # sampling frequency and different time step sizes.
+  # We need to figure out what are the times collected by the fom and rom
+  # and then intersect to find the corresponding states that we need
+  # to compare to compute the errors
   fomStatesCollectionTimes = np.loadtxt(fomTestDir+"/fom_snaps_state_steps_and_times.txt", dtype=float)[:,1]
+  logging.debug("fomStatesCollectionTimes = {}".format(fomStatesCollectionTimes))
+  logging.info("")
   assert(len(fomStatesCollectionTimes) == fomStates.shape[1])
   maxFomTime = np.max(fomStatesCollectionTimes)
 
   romStatesCollectionTimes = np.loadtxt(romDir+"/rom_snaps_state_steps_and_times.txt", dtype=float)[:,1]
+  logging.debug("romStatesCollectionTimes = {}".format(romStatesCollectionTimes))
+  logging.info("")
   romStatesCollectionTimesToUse = romStatesCollectionTimes
   # need to figure out if the rom run failed:
   # to do so, we find the largest time that the fom reached and see where
@@ -102,35 +114,30 @@ def compute_errors_for_odrom_dir(workDir, romDir):
     romRunFailed = True
     romStatesCollectionTimesToUse = romStatesCollectionTimesToUse[:indexInRomTimes]
   logging.debug("romStatesCollectionTimesToUse = {}".format(romStatesCollectionTimesToUse))
-  # print(fomStatesCollectionTimes)
-  # print("")
-  # print(romStatesCollectionTimesToUse)
-  # print("")
+  print("")
 
-  # find which times are in common
+  # find which col indices from fom and rom states I need to keep
   # https://stackoverflow.com/questions/8251541/numpy-for-every-element-in-one-array-find-the-index-in-another-array
   fomColIndicesToKeep = np.where(np.in1d(fomStatesCollectionTimes, romStatesCollectionTimesToUse))[0]
-  #logging.debug(fomColIndicesToKeep)
+  logging.debug("fomColIndicesToKeep = {}".format(fomColIndicesToKeep))
   if len(fomColIndicesToKeep) == 0:
     logging.error("fomColIndicesToKeep cannot be empty, something wrong, terminating")
     sys.exit()
 
-  # now that we have the target col indices , select only those fom states
+  romColIndicesToKeep = np.where(np.in1d(romStatesCollectionTimesToUse, fomStatesCollectionTimes))[0]
+  logging.debug("romColIndicesToKeep = {}".format(romColIndicesToKeep))
+  if len(romColIndicesToKeep) == 0:
+    logging.error("romColIndicesToKeep cannot be empty, something wrong, terminating")
+    sys.exit()
+
+  # now that we have the target col indices, select only those states
   selectedFomStates = fomStates[:, fomColIndicesToKeep]
-
-  # load modes used for each partition
-  modesPerTile = np.loadtxt(romDir+"/modes_per_tile.txt", dtype=int)
-  totalModes = np.sum(modesPerTile)
-  numTiles = len(modesPerTile)
-
-  # load rom states
-  romStateSnaps = load_rom_state_snapshot_matrix(romDir, totalModes)[:, :len(romStatesCollectionTimesToUse)]
-  assert(romStateSnaps.flags['F_CONTIGUOUS'])
+  selectedRomStates = romStates[:, romColIndicesToKeep]
 
   fomStateReconstructed = np.zeros_like(selectedFomStates, order='F')
   partitioningInfo      = find_partition_info_path_from_input_file(romDir)
   # here we want to ALWAYS use the FULL pod modes within each tile
-  # so taht we can reconstruct on the FULL mesh
+  # so that we can reconstruct on the FULL mesh
   podDir = find_state_full_pod_modes_path_from_input_file(romDir)
   romState_i = 0
   for tileId in range(numTiles):
@@ -141,7 +148,7 @@ def compute_errors_for_odrom_dir(workDir, romDir):
     myFullStateRows = np.loadtxt(srVecFile, dtype=int)
 
     # myslice of romStates
-    myRomStatesSlice = romStateSnaps[romState_i:romState_i+myK, :]
+    myRomStatesSlice = selectedRomStates[romState_i:romState_i+myK, :]
     tmpy = np.dot(myPhi, myRomStatesSlice)
     for j,it in enumerate(myFullStateRows):
       fomStateReconstructed[it, :] = tmpy[j, :]
