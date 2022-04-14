@@ -189,9 +189,11 @@ def run_standard_pod_galerkin_full(workDir, problem, module, \
     # loop: over all mode setting policies
     # ------
     if not hasattr(module, 'standardrom_modes_setting_policies'):
-      sys.exit("for standard galerkin, you need standardrom_modes_setting_policies in the problem")
+      logging.error("for standard galerkin, you need standardrom_modes_setting_policies in the problem")
+      sys.exit(1)
     if scenario not in module.standardrom_modes_setting_policies:
-      sys.exit("scenario = {} not valid key in module.standardrom_modes_setting_policies".format(scenario))
+      logging.error("scenario = {} not valid key in module.standardrom_modes_setting_policies".format(scenario))
+      sys.exit(1)
 
     for modeSettingIt_key, modeSettingIt_val in module.standardrom_modes_setting_policies[scenario].items():
 
@@ -211,7 +213,8 @@ def run_standard_pod_galerkin_full(workDir, problem, module, \
                                                          energyValue, numModes, setId)
 
       else:
-        sys.exit('run_standard_pod_galerkin_full: invalid modeSettingPolicy = {}'.format(modeSettingIt_key))
+        logging.error('run_standard_pod_galerkin_full: invalid modeSettingPolicy = {}'.format(modeSettingIt_key))
+        sys.exit(1)
 
 # -------------------------------------------------------------------
 def setLogger():
@@ -234,7 +237,8 @@ if __name__ == '__main__':
 
   # make sure the workdir exists
   if not os.path.exists(workDir):
-    sys.exit("Working dir {} does not exist, terminating".format(workDir))
+    logging.error("Working dir {} does not exist, terminating".format(workDir))
+    sys.exit(1)
 
   banner_import_problem()
   scenario = read_scenario_from_dir(workDir)

@@ -199,7 +199,7 @@ base_dic[-1] = {
     'finalTime': 4.0,
     'inviscidFluxReconstruction' : "Weno5",
     'odeScheme': "RK4",
-    'dt' : 0.005
+    'dt' : 0.008
   },
   'physicalCoefficients' : {
     'gravity': 9.8, 'coriolis':"tbd", 'pulsemag': 0.125
@@ -210,20 +210,20 @@ train_points[-1] = { 0: -3.0}
 test_points[-1]  = train_points[-1]
 use_ic_reference_state[-1] = True
 basis_sets[-1] = { 0: [0]}
-algos[-1] = [#"PodStandardProjectionError", \
-             #"PodStandardGalerkin", \
-             #"PodStandardGalerkinGappy", \
+algos[-1] = ["PodStandardProjectionError", \
+             "PodStandardGalerkin", \
+             "PodStandardGalerkinGappy", \
              "PodOdProjectionError",\
-             "PodOdGalerkin"]
-             #"PodOdGalerkinGappy",\
-             #"PodOdGalerkinGappyMasked"]
+             "PodOdGalerkin",\
+             "PodOdGalerkinGappy",\
+             "PodOdGalerkinGappyMasked"]
 
 standardrom_modes_setting_policies[-1] = {'userDefinedValue' : [20],\
                                           'energyBased' : [99.9999]}
 
-odrom_modes_setting_policies[-1] = { #'tileSpecificUsingEnergy' : [99.999], \
-                                     'allTilesUseTheSameUserDefinedValue' : [20]}
-                                     #'findMinValueAcrossTilesUsingEnergyAndUseInAllTiles': [99.95]}
+odrom_modes_setting_policies[-1] = { 'tileSpecificUsingEnergy' : [99.999], \
+                                     'allTilesUseTheSameUserDefinedValue' : [20],
+                                     'findMinValueAcrossTilesUsingEnergyAndUseInAllTiles': [99.95]}
 odrom_min_num_modes_per_tile[-1] = 5
 odrom_partitions[-1] = {'rectangularUniform' : [[7,7]]}
-sample_meshes[-1] = [["psampling", 0.5, 0], ['random', 0.4]]
+sample_meshes[-1] = [["psampling", 0.5, 0], ['random', 0.8]]

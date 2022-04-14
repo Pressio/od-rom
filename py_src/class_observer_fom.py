@@ -7,6 +7,7 @@ class FomObserver:
   def __init__(self, stateDofsCount, \
                samplingFreqState, samplingFreqVelocity, \
                numSteps, dt):
+    logger = logging.getLogger(__name__)
 
     self.dt_    = dt
     self.f_     = [int(samplingFreqState), int(samplingFreqVelocity)]
@@ -14,11 +15,11 @@ class FomObserver:
 
     if numSteps % samplingFreqState != 0:
       logger.error("numSteps not divisible by samplingFreqState")
-      sys.exit()
+      sys.exit(1)
 
     if numSteps % samplingFreqVelocity != 0:
       logger.error("numSteps not divisible by samplingFreqVelocity")
-      sys.exit()
+      sys.exit(1)
 
     totalStateSnaps = int(numSteps/samplingFreqState)+1
     totalRhsSnaps   = int(numSteps/samplingFreqVelocity)+1

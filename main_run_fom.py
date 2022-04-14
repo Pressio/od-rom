@@ -71,7 +71,7 @@ def find_full_mesh_and_ensure_unique(workDir):
     em += "inside the workDir = {} \n".format(workDir)
     em += "You can only have a single FULL mesh the working directory."
     logging.error(em)
-    sys.exit()
+    sys.exit(1)
   return fomFullMeshes[0]
 
 # ----------------------------------------------------------------
@@ -104,7 +104,8 @@ def run_single_fom(runDir, appObj, dic):
   elif odeScheme in ["SSPRK3", "ssprk3"]:
     pda.advanceSSP3(appObj, yn, dt, numSteps, observer=obsO)
   else:
-    sys.exit("run_single_fom: invalid ode scheme = {}".format(odeScheme))
+    logging.error("run_single_fom: invalid ode scheme = {}".format(odeScheme))
+    sys.exit(1)
 
   # because of how the advance fncs are implemented, the state yn
   # after the time integration is the state at the last step
@@ -125,7 +126,8 @@ def run_single_fom(runDir, appObj, dic):
   from scipy import linalg
   stateNorm = linalg.norm(yn, check_finite=False)
   if math.isnan(stateNorm):
-    sys.exit("Fom run failed, maybe check time step?")
+    logging.error("Fom run failed, maybe check time step?")
+    sys.exit(1)
 
 # -------------------------------------------------------------------
 def run_foms(workDir, problem, module, scenario, \
@@ -226,7 +228,8 @@ if __name__ == '__main__':
   # use base_dic to check this because that dic should always be present.
   valid_scenarios_ids = list(module.base_dic.keys())
   if scenario not in valid_scenarios_ids:
-    sys.exit("Scenario = {} is invalid for the target problem".format(scenario))
+    logging.error("Scenario = {} is invalid for the target problem".format(scenario))
+    sys.exit(1)
 
   # --------------------------------------
   banner_make_fom_mesh()

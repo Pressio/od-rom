@@ -31,22 +31,22 @@ def check_and_print_problem_summary(problem, module):
   logger.info("module path = {}".format(modulePath))
 
   dimensionality = None
-  numDofsPerCell = None 
+  numDofsPerCell = None
   try:
     dimensionality = module.dimensionality
   except:
     logger.error("Missing dimensionality in problem's module")
-    sys.exit()
+    sys.exit(1)
 
   if dimensionality not in [1,2]:
     logger.error("Invalid dimensionality = {}".format(module.dimensionality))
-    sys.exit()
+    sys.exit(1)
 
   try:
     numDofsPerCell = module.numDofsPerCell
   except:
     logger.error("Missing numDofsPerCell in problem's module")
-    sys.exit()
+    sys.exit(1)
 
   logger.info("dimensionality = {}".format(dimensionality))
   logger.info("numDofsPerCell = {}".format(numDofsPerCell))
@@ -91,7 +91,7 @@ def banner_fom_test():
   logger.info("\033[1;30;47mFOM Test runs"+32*" "+color_resetter())
 
 # -------------------------------------------------------------------
-# global galerkin 
+# global galerkin
 # -------------------------------------------------------------------
 def banner_compute_full_pod():
   logger = logging.getLogger(__name__)
@@ -112,7 +112,7 @@ def banner_compute_full_domain_projection_error():
         + color_resetter())
 
 # -------------------------------------------------------------------
-# od banners 
+# od banners
 # -------------------------------------------------------------------
 def banner_make_partitions():
   logger = logging.getLogger(__name__)

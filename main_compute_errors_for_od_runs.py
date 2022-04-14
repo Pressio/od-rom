@@ -122,13 +122,13 @@ def compute_errors_for_odrom_dir(workDir, romDir):
   logging.debug("fomColIndicesToKeep = {}".format(fomColIndicesToKeep))
   if len(fomColIndicesToKeep) == 0:
     logging.error("fomColIndicesToKeep cannot be empty, something wrong, terminating")
-    sys.exit()
+    sys.exit(1)
 
   romColIndicesToKeep = np.where(np.in1d(romStatesCollectionTimesToUse, fomStatesCollectionTimes))[0]
   logging.debug("romColIndicesToKeep = {}".format(romColIndicesToKeep))
   if len(romColIndicesToKeep) == 0:
     logging.error("romColIndicesToKeep cannot be empty, something wrong, terminating")
-    sys.exit()
+    sys.exit(1)
 
   # now that we have the target col indices, select only those states
   selectedFomStates = fomStates[:, fomColIndicesToKeep]
@@ -186,7 +186,8 @@ if __name__ == '__main__':
 
   # make sure the workdir exists
   if not os.path.exists(workDir):
-    sys.exit("Working dir {} does not exist, terminating".format(workDir))
+    logging.error("Working dir {} does not exist, terminating".format(workDir))
+    sys.exit(1)
 
   banner_import_problem()
   scenario = read_scenario_from_dir(workDir)

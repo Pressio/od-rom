@@ -321,7 +321,8 @@ def run_od_pod_galerkin_full(workDir, problem, module, \
                                                      energyValue, None)
 
         else:
-          sys.exit('run_od_pod_galerkin_full: invalid modeSettingPolicy = {}'.format(modeSettingIt_key))
+          logging.error('run_od_pod_galerkin_full: invalid modeSettingPolicy = {}'.format(modeSettingIt_key))
+          sys.exit(1)
 
 
 # -------------------------------------------------------------------
@@ -347,7 +348,8 @@ if __name__ == '__main__':
 
   # make sure the workdir exists
   if not os.path.exists(workDir):
-    sys.exit("Working dir {} does not exist, terminating".format(workDir))
+    logging.error("Working dir {} does not exist, terminating".format(workDir))
+    sys.exit(1)
 
   # --------------------------------------
   banner_import_problem()

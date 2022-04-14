@@ -1,5 +1,5 @@
 
-import re, os, time, yaml
+import re, os, time, yaml, logging
 
 # -------------------------------------------------------------------
 def find_state_sampling_frequency_from_input_file(runDir):
@@ -39,6 +39,7 @@ def find_num_cells_from_info_file(workDir, ns):
 
 # -------------------------------------------------------------------
 def find_total_cells_from_info_file(workDir):
+  logger = logging.getLogger(__name__)
   dims = find_dimensionality_from_info_file(workDir)
   if dims == 1:
     return find_num_cells_from_info_file(workDir, "nx")
@@ -47,7 +48,8 @@ def find_total_cells_from_info_file(workDir):
     ny = find_num_cells_from_info_file(workDir, "ny")
     return nx*ny
   else:
-    sys.exit("Invalid dims = {}".format(dims))
+    logger.error("Invalid dims = {}".format(dims))
+    sys.exit(1)
 
 # -------------------------------------------------------------------
 def find_partition_info_path_from_input_file(runDir):

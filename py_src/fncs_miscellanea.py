@@ -1,6 +1,6 @@
 
 import numpy as np
-import sys, os, re, yaml
+import sys, os, re, yaml, logging
 
 from .fncs_directory_naming import \
   string_identifier_from_partition_info_dir
@@ -29,6 +29,7 @@ def find_full_mesh_and_ensure_unique(workDir):
   # via command line argument and must be unique for a scenario.
   # If one wants to run for a different mesh, then they have to
   # run this script again with a different working directory
+  logger = logging.getLogger(__name__)
 
   fomFullMeshes = [workDir+'/'+d for d in os.listdir(workDir) \
                    # we need to find only dirs that BEGIN with
@@ -40,7 +41,8 @@ def find_full_mesh_and_ensure_unique(workDir):
       em += it + "\n"
     em += "inside the workDir = {} \n".format(workDir)
     em += "You can only have a single FULL mesh the working directory."
-    sys.exit(em)
+    logger.error(em)
+    sys.exit(1)
   return fomFullMeshes[0]
 
 # -------------------------------------------------------------------
@@ -61,6 +63,8 @@ def find_all_sample_meshes_for_target_partition_info(workDir, partInfoDir):
 
 # -------------------------------------------------------------------
 def replicate_bases_for_multiple_dofs(M, numDofsPerCell):
+  logger = logging.getLogger(__name__)
+
   if numDofsPerCell == 1:
     return M
 
@@ -93,8 +97,10 @@ def replicate_bases_for_multiple_dofs(M, numDofsPerCell):
     Phi[2::4,   K1+K2: K1+K2+K3] = M
     Phi[3::4,K1+K2+K3: K1+K2+K3+K4] = M
     return Phi
+
   else:
-    sys.exit("replicate_bases_for_multiple_dofs: invalid numDofsPerCell")
+    logger.error("replicate_bases_for_multiple_dofs: invalid numDofsPerCell")
+    sys.exit(1)
 
 
 # ----------------------------------------------------------------

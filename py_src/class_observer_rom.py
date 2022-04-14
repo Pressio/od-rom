@@ -13,7 +13,7 @@ class RomObserver:
 
     if numSteps % samplingFreqState != 0:
       logger.error("numSteps not divisible by samplingFreqState")
-      sys.exit()
+      sys.exit(1)
 
     totalStateSnaps = int(numSteps/samplingFreqState) + 1
     totNumModes = np.sum(list(modesPerTile.values()))

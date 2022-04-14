@@ -94,7 +94,8 @@ if __name__ == '__main__':
 
   # make sure the workdir exists
   if not os.path.exists(workDir):
-    sys.exit("Working dir {} does not exist, terminating".format(workDir))
+    logging.error("Working dir {} does not exist, terminating".format(workDir))
+    sys.exit(1)
 
   banner_import_problem()
   scenario = read_scenario_from_dir(workDir)
@@ -102,7 +103,7 @@ if __name__ == '__main__':
   module   = importlib.import_module(problem)
   check_and_print_problem_summary(problem, module)
 
-  # we need to compute global POD if any of the 
+  # we need to compute global POD if any of the
   # following target algorithms is present in the scenario
   triggers = ["PodStandardGalerkin", \
               "PodStandardGalerkinGappy",\

@@ -110,7 +110,8 @@ def compute_projection_errors(workDir, problem, module, scenario):
               output = popen.stdout.read();
 
       else:
-        sys.exit(__file__ + 'invalid modeSettingPolicy = {}'.format(modeSettingIt_key))
+        logging.error(__file__ + 'invalid modeSettingPolicy = {}'.format(modeSettingIt_key))
+        sys.exit(1)
 
 # -------------------------------------------------------------------
 def setLogger():
@@ -133,7 +134,8 @@ if __name__ == '__main__':
 
   # make sure the workdir exists
   if not os.path.exists(workDir):
-    sys.exit("Working dir {} does not exist, terminating".format(workDir))
+    logging.error("Working dir {} does not exist, terminating".format(workDir))
+    sys.exit(1)
 
   banner_import_problem()
   scenario = read_scenario_from_dir(workDir)

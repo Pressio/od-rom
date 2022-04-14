@@ -183,7 +183,8 @@ def compute_od_pod_projection_errors(workDir, problem, module, scenario):
 
 
         else:
-          sys.exit('compute_od_pod_projection_errors: invalid modeSettingPolicy = {}'.format(modeSettingIt_key))
+          logging.error('compute_od_pod_projection_errors: invalid modeSettingPolicy = {}'.format(modeSettingIt_key))
+          sys.exit(1)
 
 
 # -------------------------------------------------------------------
@@ -207,7 +208,8 @@ if __name__ == '__main__':
 
   # make sure the workdir exists
   if not os.path.exists(workDir):
-    sys.exit("Working dir {} does not exist, terminating".format(workDir))
+    logging.error("Working dir {} does not exist, terminating".format(workDir))
+    sys.exit(1)
 
   banner_import_problem()
   scenario = read_scenario_from_dir(workDir)

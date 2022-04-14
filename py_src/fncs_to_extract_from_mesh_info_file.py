@@ -1,6 +1,6 @@
 
 import numpy as np
-import sys, os, re, yaml
+import sys, os, re, yaml, logging
 
 # -------------------------------------------------------------------
 def find_sample_mesh_count_from_info_file(workDir):
@@ -40,6 +40,8 @@ def find_num_cells_from_info_file(workDir, ns):
 
 # -------------------------------------------------------------------
 def find_total_cells_from_info_file(workDir):
+  logger = logging.getLogger(__name__)
+
   dims = find_dimensionality_from_info_file(workDir)
   if dims == 1:
     return find_num_cells_from_info_file(workDir, "nx")
@@ -48,4 +50,5 @@ def find_total_cells_from_info_file(workDir):
     ny = find_num_cells_from_info_file(workDir, "ny")
     return nx*ny
   else:
-    sys.exit("Invalid dims = {}".format(dims))
+    logger.error("Invalid dims = {}".format(dims))
+    sys.exit(1)
