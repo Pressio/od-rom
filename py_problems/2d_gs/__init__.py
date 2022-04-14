@@ -14,8 +14,6 @@ def create_problem_for_scenario(scenario, meshObj, coeffDic, dicIn, val):
   killRate = coeffDic['killRate']
 
   if scenario == 1:
-    killRate = val
-  elif scenario == 2:
     feedRate = val
   else:
     sys.exit("invalid scenario {} for 2d_gs".format(scenario))
