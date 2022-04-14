@@ -30,7 +30,7 @@ if __name__ == '__main__':
   print("modes = {}".format(numModes))
 
   #-----------------------------------
-  # load fom states 
+  # load fom states
   #-----------------------------------
   fomMeshDir     = find_meshdir_from_input_file(fomDir)
   fomTotCells    = find_total_cells_from_info_file(fomMeshDir)
@@ -85,3 +85,6 @@ if __name__ == '__main__':
   errMat[:, 1] = np.linalg.norm(error, ord=1, axis=0)/np.linalg.norm(rawFomStates, ord=1, axis=0)
   errMat[:, 2] = np.linalg.norm(error, ord=np.inf, axis=0)/np.linalg.norm(rawFomStates, ord=np.inf, axis=0)
   np.savetxt(workDir+"/errors_in_time.txt", errMat)
+
+  # save to file the final reconstructed state
+  np.savetxt(workDir+"/fom_state_rec_final.txt", fomStatesReconstructed[:,-1])
