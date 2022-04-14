@@ -2,6 +2,12 @@ import numpy as np
 
 from py_problems.dictionaries import *
 
+'''
+this scenario is interesting because the param space
+is such that the dynamics has a kind of bifurcation,
+so this is pretty hard.
+odrom performs pretty well while regular gal does not.
+'''
 base_dic[1] = {
   'fom' : {
     'meshSize': [200, 200],
