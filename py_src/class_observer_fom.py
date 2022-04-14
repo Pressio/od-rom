@@ -1,6 +1,6 @@
 
 import numpy as np
-import sys
+import sys, logging
 from .fncs_myio import write_matrix_to_bin_omit_shape
 
 class FomObserver:
@@ -11,6 +11,14 @@ class FomObserver:
     self.dt_    = dt
     self.f_     = [int(samplingFreqState), int(samplingFreqVelocity)]
     self.count_ = [int(0), int(0)]
+
+    if numSteps % samplingFreqState != 0:
+      logger.error("numSteps not divisible by samplingFreqState")
+      sys.exit()
+
+    if numSteps % samplingFreqVelocity != 0:
+      logger.error("numSteps not divisible by samplingFreqVelocity")
+      sys.exit()
 
     totalStateSnaps = int(numSteps/samplingFreqState)+1
     totalRhsSnaps   = int(numSteps/samplingFreqVelocity)+1

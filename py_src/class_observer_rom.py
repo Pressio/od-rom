@@ -1,16 +1,19 @@
 
 import numpy as np
-import sys
+import sys, logging
 from .fncs_myio import write_matrix_to_bin_omit_shape
 
 class RomObserver:
   def __init__(self, samplingFreqState, numSteps, modesPerTile, dt):
+    logger = logging.getLogger(__name__)
+
     self.f_     = int(samplingFreqState)
     self.count_ = int(0)
     self.dt_    = dt
 
-    if numSteps % samplingFreqState !=0:
-      sys.exit("RomObserver: numSteps not divisible by samplingFreqState")
+    if numSteps % samplingFreqState != 0:
+      logger.error("numSteps not divisible by samplingFreqState")
+      sys.exit()
 
     totalStateSnaps = int(numSteps/samplingFreqState) + 1
     totNumModes = np.sum(list(modesPerTile.values()))
