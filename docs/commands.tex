@@ -1,6 +1,36 @@
 
 \newcommand{\FR}[1]{\textcolor{red}{#1}}
 \newcommand{\EP}[1]{\textcolor{blue}{EP:#1}}
+\newcommand{\JT}[1]{\textcolor{blue}{JT:#1}}
+
+\newcommand{\R}{\mathbb{R}}
+\newcommand{\RR}[1]{\R^{#1}}
+\newcommand{\FomDim}{N}
+\newcommand{\RomDim}{K}
+\newcommand{\HRDim}{M}
+
+\DeclareMathOperator*{\argmin}{arg\,min}
+
+\newcommand{\state}{x}
+\newcommand{\refstate}{\state_{ref}}
+\newcommand{\StateOld}{\state^n}
+\newcommand{\StateNew}{\state^{n+1}}
+\newcommand{\ExplicitUpdate}{F}
+\newcommand{\velocity}{f}
+\newcommand{\stepsize}{\Delta t}
+\newcommand{\params}{\mu}
+\newcommand{\RedState}{\hat{\state}}
+\newcommand{\RedStateOld}{\RedState^n}
+\newcommand{\RedStateNew}{\RedState^{n+1}}
+\newcommand{\approxState}{\tilde{\state}}
+\newcommand{\dummy}{\hat{v}}
+\newcommand{\basis}{\Phi}
+\newcommand{\snapshots}{\mathcal{S}}
+\newcommand{\tileDim}{\FomDim_i}
+
+\newcommand{\ExplicitUpdateArgs}{\ExplicitUpdate(\StateOld, \params)}
+\newcommand{\ExplicitUpdateRedArgs}{\ExplicitUpdate(\basis\RedStateOld+\refstate,\params)}
+\newcommand{\velocityArgs}{\velocity(\StateOld, \params)}
 
 
 % these are taken from entropy paper and 

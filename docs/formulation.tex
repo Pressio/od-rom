@@ -2,3 +2,154 @@
 \section{Mathematical Formulation} \label{sec:formulation}
 
 We focus on problems ...
+
+We consider systems which my be expressed in semi-discrete form as
+\begin{equation}
+%r(\dot{\state},\state,t;\params)=0
+\dot{\state} = \velocity(\state,t;\params)
+\end{equation}
+where $\state\in\RR{\FomDim}$, 
+$t\in [0,T] $, 
+and $\mu\in\mathcal{D}$.
+%and $r: \RR{\FomDim}\times\RR{\FomDim}\times[0,T]\times\mathcal{D}\to\RR{\FomDim}$.
+
+We assume that we are able evaluate $\state(t;\params)$ for multiple ``training" parameter instances $\params_i\in\mathcal{D}$ and to save off a set of snapshots of the state $\snapshots=\left[ \state(t;\params_1) \dots \state(t;\params_{n_t}) \right] \in \RR{N\times n_t}$.
+
+\subsection{Galerkin Model Reduction}
+
+In the Galerkin method, we seek to approximate $\state$ as 
+\begin{equation}
+\approxState\approx\basis\RedState
+\end{equation}
+with %$\refstate\in\RR{\FomDim}$, 
+$\RedState\in\RR{\RomDim}$, and $\basis\in\RR{\FomDim\times\RomDim}$ and $\FomDim\gg\RomDim$.
+The Galerkin reduced order model (ROM) is constructed by projecting the governing equation onto the basis $\basis$
+\begin{equation}
+\dot{\RedState} = (A\basis)^\dagger A\velocity(\basis\RedState,t;\params)
+\end{equation}
+where $\dagger$ denotes the Moore-Penrose pseudoinverse and $A\in\RR{\HRDim\times\FomDim}$ with $\HRDim<\FomDim$ is a weighting matrix to enable hyperreduction.
+
+Traditionally, $\basis$ is created via POD.
+We assemble the snapshot matrix $\snapshots$ and compute the (thin) singular value decomposition
+\begin{equation}
+U,\Sigma, V = svd(\snapshots).
+\end{equation}
+The left singular vectors $U\in\RR{N\times min(N,n_t)}$ form a hierarchical basis for the solution $\state$.
+We collect the first $K\leq n_t$, $K\ll N$ columns of $U$ into the basis matrix $\basis$.
+
+\subsection{OD Galerkin} \label{sec:od_galerkin}
+
+In the OD Galerkin method, the state is decomposed into $x_0, x_1, \dots, \state_{n-1}$, $\state_i\in\RR{\tileDim}$ with
+\begin{equation}
+\sum_{i=0}^{n-1} \tileDim = \FomDim
+\end{equation}
+and 
+\begin{equation}
+x=[x_0^T, x_1^T, \dots, x_{n-1}^T]^T.
+\end{equation}
+This decomposition represents the partitioning of the domain into a set of subdomains via e.g. recursive coordinate bisection (RCB).
+
+We can compute a local basis $\basis_i\in\RR{\tileDim\times\RomDim_i}$ for each local state $\state_i$ using the method of snapshots described above.
+Note that the local basis needent be of the same dimension for each subdomain.
+Within each subdomain, we can apply Galerkin projection to yield
+\begin{equation}
+\label{eq:local_rom}
+\dot{\RedState}_i = (A_i\basis_i)^\dagger A_i\velocity(\state_{ref,i} + \basis_i\RedState_i,t;\params)
+\end{equation}
+Assuming that the host code is capable of parallel evaluation, the existing machinery may be leveraged to provide each local ROM (Eq. \ref{eq:local_rom}) with the appropriate boundary conditions at the partition interfaces (either Schur's complement or Schwarz alternating methods depending on the host code architecture).
+
+This is equivalent to defining a global ROM with a block diagonal basis matrix given by
+\begin{equation}
+\label{eq:block_basis}
+\Phi = 
+\begin{bmatrix}
+\Phi_0 & 0 & \dots & 0 \\
+0      & \Phi_1 &  &  \\
+\vdots & & \ddots & \vdots \\
+0 & & \dots & \Phi_{n-1}
+\end{bmatrix},
+\end{equation}
+with $\Phi\in\RR{\FomDim\times\RomDim}$ and $\RomDim=\sum \RomDim_i$.
+The use of spatially local bases within each partition is observed to provide the resultant OD Galerkin ROM with enhanced stability realtive to a global ROM.
+
+\subsection{GFEM}
+
+The generalized finite element method (GFEM) is an approach to approximating functions with 3 main elements: patches, a partition of unity, and local approximation spaces \cite{shilt2021high}.  GFEM has been shown to provide stability benefits for a range of applications including Stokes flow \cite{SHILT2020113165}, advection-diffusion \cite{SHILT2021113889}, and unsteady Burgers' \cite{shilt2021high}.
+
+\JT{these definitions are just copied from \cite{shilt2021high} with the notation switched around a little}
+
+\subsubsection{Patches} \label{sec:patches}
+
+Define an open covering of the spatial domain $\Omega$ such that
+\begin{equation}
+\Omega\subset\bigcup_{i=0}^{n-1} \omega_i.
+\end{equation}
+Any point $r\in\Omega$ may belong to at most $m\le n$ elements of $\lbrace\omega_i\rbrace_{i=0}^{n-1}$.
+For a discretized domain, $\omega_i$ commonly consists of the union of all finite elements sharing the node $i$ of the mesh.
+
+\subsubsection{Partition of Unity}
+Let $\lbrace\psi_i\rbrace_{i=0}^{n-1}$ be piecewise $C^0$ functions defined on $\Omega$ satsifying
+\begin{equation}
+\sum_{i=0}^{n-1} \psi(r) = 1, \forall r\in\Omega
+\end{equation}
+then $\lbrace\psi_i\rbrace_{i=0}^{n-1}$ forms a partition of unity with respect to $\lbrace\omega_i\rbrace_{i=0}^{n-1}$.
+
+\subsubsection{Local Approximation Spaces}
+
+In GFEM, a function $u(r)$ is approximated as 
+\begin{equation}
+\label{eq:gfem}
+u(r)\approx \sum_i \psi_i(r) u_i + \sum_\alpha \sum_j \psi_j(r)\xi_\alpha(r)a_{j\alpha}
+\end{equation}
+with $r\in\Omega$ \cite{aquino2009generalized}.  
+The set $\lbrace\psi_i(r)\rbrace_{i=0}^{n-1}$ is the set of finite element basis functions associated with each node in the mesh 
+and $\xi_\alpha(r)$ are enrichment functions.
+$\lbrace\psi_i(r)\rbrace_{i=0}^{n-1}$ forms a partition of unity.
+$u_i$ and $a_{j\alpha}$ are the classical and enriched nodal coefficients.
+
+The enrichment functions may be anything \JT{give some examples}.
+In Ref \cite{aquino2009generalized} and \ref{shilt2018data} global POD modes are used as enrichment functions.
+
+\subsection{Connection between GFEM and OD Galerkin}
+
+The FOM is assumed to be discretized using a standard finite element approach (no enrichment functions) such that a function $u(r)$ is approximated as 
+\begin{equation}
+\label{eq:fem}
+u(r) \approx \sum_{i=1}^\FomDim \psi_i(r) u_i,
+\end{equation}
+where $\psi_i(r)$ is the finite element basis function of node $i$.
+Making use of our learned POD basis, the solution is approximated as
+\begin{equation}
+\state(r) \approx \sum_{i=1}^\FomDim \sum_{j=1}^\RomDim \psi_i(r) \basis_{ij}\RedState_j
+\end{equation}
+for the ROM (either Galerkin or OD Galerkin).
+%and the reference solution is approximated as
+%\begin{equation}
+%\refstate(r) \approx \sum_{i=1}^\FomDim \psi_i(r) \state_{ref,i}
+%\end{equation}
+
+This approximation may also be viewed as coarser GFEM approximation with patches defined by the subdomains introduced in section \ref{sec:od_galerkin}.
+The subdomains defined in section \ref{sec:od_galerkin} represent an open covering of the domain $\Omega$.
+In keeping with the notation of section \ref{sec:patches}, we will refer to the $i^{th}$ subdomain as $\omega_i$.
+
+We define a partion of unity $\lbrace\gamma_i(r)\rbrace_{i=0}^{n-1}$ with respect to $\lbrace\omega_i\rbrace_{i=0}^{n-1}$
+to be the piecewise constant function
+\begin{equation}
+\gamma_i(r) = 
+\begin{cases}
+1,& \text{if } r\in\omega_i \\
+0,& \text{else}
+\end{cases}. 
+\end{equation}
+We additionally define a set of enrichment functions $\lbrace\xi_k(r)\rbrace_{k=1}^\RomDim$ with
+\begin{equation}
+\xi_k(r) = \sum_{i=1}^\FomDim \psi_i(r) \basis_{ik}.
+\end{equation}
+
+We can then write the approximate solution as
+\begin{equation}
+\state(r) \approx \sum_{i=0}^{n-1} \gamma_i(r) u_i + \sum_{i=0}^{n-1} \sum_{k=1}^\RomDim \gamma_i(r) \xi_k(r)\RedState_{i,k}.
+\end{equation}
+Therefore, we can express the OD Galerkin method as a special case of the GFEM method with $u_i=0$.
+
+\JT{It's maybe possible to massage things to include a reference state offset, but it gets kinda messy. If the reference state is constant, we could easily include it easily and have $u_i=\refstate$. If it's a function though it creates trouble fitting it into the first term while still satisfying the partition of unity definition.}
