@@ -1,0 +1,120 @@
+
+\newcommand{\FR}[1]{\textcolor{red}{#1}}
+\newcommand{\EP}[1]{\textcolor{blue}{EP:#1}}
+
+
+% these are taken from entropy paper and 
+% we can definitely reuse them somehow (thanks Eric)
+
+% \newcommand{\residualConserved}{\mathcal{R}^{\qConserved}}
+% \newcommand{\residualEntropy}{\mathcal{R}^{\qEntropy}}
+% \newcommand{\RR}[1]{\mathbb{R}^{#1}}
+% \newcommand{\RSym}[1]{\mathbb{S}^{#1}}
+% \newcommand{\RRplus}{\mathbb{R}_+}
+% \newcommand{\Flux}{\boldsymbol F}
+% \newcommand{\uDummy}{\boldsymbol u}
+% \newcommand{\vDummy}{\boldsymbol v}
+% \newcommand{\x}{\boldsymbol x}
+% \newcommand{\xDiscrete}{\mathbf{x}}
+% \newcommand{\nSpace}{N}
+% \newcommand{\rhoInf}{\rho_{\infty}}
+% \newcommand{\pInf}{p_{\infty}}
+% \newcommand{\LTwoSymbol}{L^2(\Omega)}
+% \newcommand{\ellTwoSymbol}{\ell^2}
+% \newcommand{\NonDimensionalEllTwoSymbol}{\ell^2_*}
+% \newcommand{\EntropyEllTwoSymbol}{\ell^2_{\mathcal{S}}}
+% \newcommand{\NonDimensionalLTwoSymbol}{L^2_*(\Omega)}
+% \newcommand{\EntropySymbol}{L^2_{\conservativeToEntropyInf}(\Omega)}
+% \newcommand{\EntropyConservativeSymbol}{L^2_{\entropyToConservativeInf}(\Omega)}
+% \newcommand{\conservativeToEntropyMapping}{\mathcal{V}}
+% \newcommand{\conservativeToEntropy}{\boldsymbol A}
+% \newcommand{\conservativeToEntropyInf}{\conservativeToEntropy_{\infty}}
+% \newcommand{\conservativeToEntropyDiscrete}{\mathbf{A}}
+% \newcommand{\conservativeToEntropyDiscreteInf}{\conservativeToEntropyDiscrete_{\infty}}
+% \newcommand{\entropyToConservativeDiscrete}{\mathbf{B}}
+% \newcommand{\entropyToConservative}{\boldsymbol B}
+% \newcommand{\entropyToConservativeInf}{\entropyToConservative_{\infty}}
+% \newcommand{\entropyToConservativeDiscreteInf}{\entropyToConservativeDiscrete^{\infty}}
+% \newcommand{\mass}{\mathbf{M}}
+% \newcommand{\numStepsInWindow}{n_w}
+% \newcommand{\numTimeSteps}{N_t}
+% \newcommand{\numWindows}{N_w}
+% \newcommand{\genDiscreteInnerProductSpace}{\boldsymbol \ell}
+% \newcommand{\genDiscreteNorm}[1]{ \| #1 \|_{\genDiscreteInnerProductSpace}}
+% \newcommand{\lTwoDiscreteInnerProductSpace}{\boldsymbol \ell^2}
+% \newcommand{\lTwoDiscreteNorm}[1]{ \| #1 \|_{\lTwoDiscreteInnerProductSpace}}
+% \newcommand{\lTwoNonDimensionalDiscreteInnerProductSpace}{\boldsymbol \ell^2_*}
+% \newcommand{\lTwoNonDimensionalDiscreteNorm}[1]{ \| #1 \|_{\lTwoNonDimensionalDiscreteInnerProductSpace}}
+% \newcommand{\entropyDiscreteInnerProductSpace}{\boldsymbol \ell^2_{\mathcal{S}}}
+% \newcommand{\entropyDiscreteNorm}[1]{ \| #1 \|_{\entropyDiscreteInnerProductSpace}}
+% \newcommand{\snapshotMatrix}{\boldsymbol S}
+% \newcommand{\snapshotMatrixConserved}{\boldsymbol S^{\qConserved}}
+% \newcommand{\snapshotMatrixEntropy}{\boldsymbol S^{\qEntropy}}
+% \newcommand{\GalerkinLTwoConservedRomName}{Galerkin$_{\text{conserved}}$-$\LTwoSymbol$}
+% \newcommand{\GalerkinNonDimensionalLTwoConservedRomName}{Galerkin$_{\text{conserved}}$-$\NonDimensionalLTwoSymbol$}
+% \newcommand{\GalerkinLTwoEntropyRomName}{Galerkin$_{\text{entropy}}$-$\LTwoSymbol$}
+% \newcommand{\WLSLTwoConservedRomName}{WLS$_{\text{conserved}}$-$\LTwoSymbol$}
+% \newcommand{\WLSNonDimensionalLTwoConservedRomName}{WLS$_{\text{conserved}}$-$\NonDimensionalLTwoSymbol$}
+% \newcommand{\WLSEntropyLTwoConservedRomName}{WLS$_{\text{conservative}}$-$\EntropyConservativeSymbol$}
+% \newcommand{\WLSEntropyLTwoEntropyRomName}{WLS$_{\text{entropy}}$-$\EntropyConservativeSymbol$}
+% \newcommand{\GalerkinLTwoConservedRomNameShort}{Gal$_{\text{cons.}}$-$\LTwoSymbol$}
+% \newcommand{\GalerkinNonDimensionalLTwoConservedRomNameShort}{Gal$_{\text{cons.}}$-$\NonDimensionalLTwoSymbol$}
+% \newcommand{\GalerkinLTwoEntropyRomNameShort}{Gal$_{\text{ent.}}$-$\LTwoSymbol$}
+% \newcommand{\WLSLTwoConservedRomNameShort}{WLS$_{\text{cons.}}$-$\LTwoSymbol$}
+% \newcommand{\WLSNonDimensionalLTwoConservedRomNameShort}{WLS$_{\text{cons.}}$-$\NonDimensionalLTwoSymbol$}
+% \newcommand{\WLSEntropyLTwoConservedRomNameShort}{WLS$_{\text{cons.}}$-$\EntropyConservativeSymbol$}
+% \newcommand{\WLSEntropyLTwoEntropyRomNameShort}{WLS$_{\text{ent.}}$-$\EntropyConservativeSymbol$}
+% \newcommand{\nSnapshots}{n_S}
+% \newcommand{\genInnerProduct}[2]{\left(#1,#2\right)_{\genInnerProductSpace}}
+% \newcommand{\genInnerProductSpace}{\mathcal{I}}
+% \newcommand{\discreteVelocity}{\boldsymbol f}
+% \newcommand{\uInf}{u_{\infty}}
+% \newcommand{\aInf}{a_{\infty}}
+% \newcommand{\rhouOneInf}{\rho u_{1,\infty}}
+% \newcommand{\rhouTwoInf}{\rho u_{2,\infty}}
+% \newcommand{\rhoEInf}{\rho E_{\infty}}
+% \newcommand{\discreteResidual}{\boldsymbol r}
+% \newcommand{\discreteState}{\mathbf{a}}
+% \newcommand{\discreteStateNmOne}{\mathbf{b}}
+% \newcommand{\romDim}{K}
+% \newcommand{\LTwoInnerProductNoArg}{\left(\cdot,\cdot \right)_{\LTwoSymbol}}
+% \newcommand{\LTwoInnerProductSpace}{L^2(\physicalDomain)}
+% \newcommand{\EntropyInnerProductSpace}{L^2_{\conservativeToEntropyInf}(\physicalDomain)}
+% \newcommand{\EntropyInnerProductSpaceForConservedVariables}{L^2_{\entropyToConservativeInf}(\physicalDomain)}
+% \newcommand{\NonDimensionalLTwoInnerProductSpace}{L^2_*(\physicalDomain)}
+% \newcommand{\LTwoInnerProduct}[2]{\left( #1, #2 \right)_{\LTwoSymbol}}
+% \newcommand{\NonDimensionalLTwoInnerProduct}[2]{\left( #1, #2 \right)_{\NonDimensionalLTwoSymbol}}
+% \newcommand{\EnergyInnerProduct}[2]{\left( #1, #2 \right)_{Q}}
+% \newcommand{\EntropyInnerProduct}[2]{\left( #1, #2 \right)_{\conservativeToEntropyInf}}
+% \newcommand{\EntropyInnerProductSymbol}[2]{$L_{\mathcal{S}}(\physicalDomain)$}
+% \newcommand{\EntropyInnerProductForConservedVariables}[2]{\left( #1, #2 \right)_{\entropyToConservativeInf}}
+% \newcommand{\trialBasis}{\boldsymbol \Phi}
+% \newcommand{\basisConserved}{\boldsymbol \Phi^{\qConserved}}
+% \newcommand{\basisEnergy}{\boldsymbol \Phi^{\qEnergy}}
+% \newcommand{\basisEntropy}{\boldsymbol \Phi^{\qEntropy}}
+% \newcommand{\testBasis}{\boldsymbol \Psi}
+% \newcommand{\scalingMatrix}{\mathbf{D}}
+% \newcommand{\weightingMatrixEnergy}{\mathbf{W}_Q}
+% \newcommand{\weightingMatrixEntropy}{\mathbf{W}_{\qEntropy_{\text{ref}}}}
+% \newcommand{\qConserved}{\boldsymbol U}
+% \newcommand{\qConservedApprox}{\tilde{\boldsymbol U}}
+% \newcommand{\qConservedDummy}{{\boldsymbol U}^*}
+% \newcommand{\qConservedDiscrete}{\mathbf{U}}
+% \newcommand{\qConservedDiscreteApprox}{\tilde{\mathbf{U}}}
+% \newcommand{\qEntropyDiscrete}{\mathbf{V}}
+% \newcommand{\qEntropyDiscreteApprox}{\tilde{\mathbf{V}}}
+% \newcommand{\qConservedBase}{\boldsymbol U_{\text{ref}}}
+% \newcommand{\qEnergy}{\boldsymbol Q}
+% \newcommand{\qEntropy}{\boldsymbol V}
+% \newcommand{\qEntropyApprox}{\tilde{\boldsymbol V}}
+% \newcommand{\qEntropyDummy}{{\boldsymbol V}^*}
+% \newcommand{\genStateQEnergy}{\hat{\boldsymbol Q}}
+% \newcommand{\genStateQEntropy}{\hat{\boldsymbol V}}
+% \newcommand{\energyMapping}{\mathcal{Q}}
+% \newcommand{\entropyMapping}{\mathcal{V}}
+% \newcommand{\genStateQConserved}{\hat{\boldsymbol U}}
+% \newcommand{\fluxOne}{\boldsymbol F_1}
+% \newcommand{\fluxTwo}{\boldsymbol F_2}
+% \newcommand{\bz}{\boldsymbol 0}
+% \newcommand{\physicalDomain}{\Omega}
+% \newcommand{\timeDomain}{[0,T]}

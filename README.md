@@ -10,19 +10,20 @@
 
   - SWE:
     - subdirectory: `py_problems.2d_swe`
-    - `./py_problems/2d_swe/scenarios.py`
-    - make sure you also edit the init file: `./py_problems/2d_swe/__init__.py`
+    - `./code/py_problems/2d_swe/scenarios.py`
+    - make sure you also edit the init file: `./code/py_problems/2d_swe/__init__.py`
 
   - Gray-Scott:
     - subdirectory: `py_problems.2d_gs`
-    - `./py_problems/2d_gs/scenarios.py`
-    - make sure you also edit the init file: `./py_problems/2d_gs/__init__.py`
+    - `./code/py_problems/2d_gs/scenarios.py`
+    - make sure you also edit the init file: `./code/py_problems/2d_gs/__init__.py`
 
 3. run the bach script:
 
 ```bash
 export WORKDIR=/home/your_test
 export PDADIR=<fullpath-to-your-cloned-pressiodemoapps>
+cd code
 bash run.sh ${PDADIR} ${WORKDIR} 2d_swe <scenario-number>
 ```
 if you want a different problem, change `2d_swe` accordingly
