@@ -31,7 +31,6 @@ def inviscid_flux_string_to_enum(stringIn):
 
 # -------------------------------------------------------------------
 def create_problem_for_scenario(scenario, meshObj, coeffDic, dicIn, val):
-  probId    = pda.Swe2d.SlipWall
   schemeStr = dicIn['inviscidFluxReconstruction']
   schemeEnu = inviscid_flux_string_to_enum(schemeStr)
 
