@@ -31,7 +31,6 @@ def inviscid_flux_string_to_enum(stringIn):
 
 # -------------------------------------------------------------------
 def create_problem_for_scenario(scenario, meshObj, coeffDic, dicIn, val):
-  probId    = pda.Swe2d.SlipWall
   schemeStr = dicIn['inviscidFluxReconstruction']
   schemeEnu = inviscid_flux_string_to_enum(schemeStr)
 
@@ -40,7 +39,7 @@ def create_problem_for_scenario(scenario, meshObj, coeffDic, dicIn, val):
   coriolis = coeffDic['coriolis']
   pulse    = coeffDic['pulsemag']
 
-  if scenario in [1,2,3,4,-1]:
+  if scenario in [1,2,3,4,5,-1]:
     coriolis = val
   else:
     sys.exit("__init__: invalid scenario {} for 2d_swe".format(scenario))

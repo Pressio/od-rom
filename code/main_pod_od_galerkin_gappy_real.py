@@ -122,14 +122,19 @@ def run_od_pod_galerkin_gappy(workDir, problem, module, \
                                                      setId, smKeyword, "gappy")
 
           #*********************************************************************
-          elif modeSettingIt_key == 'findMinValueAcrossTilesUsingEnergyAndUseInAllTiles':
+          elif modeSettingIt_key in ['findMinValueAcrossTilesUsingEnergyAndUseInAllTiles', \
+                                     'findMaxValueAcrossTilesUsingEnergyAndUseInAllTiles']:
           #*********************************************************************
             for energyValue in modeSettingIt_val:
               modesPerTileDicTmp = find_modes_per_tile_from_target_energy(module, scenario, \
                                                                           currStateFullPodDir, energyValue)
-              # find minimum value
-              minMumModes = np.min(list(modesPerTileDicTmp.values()))
-              modesPerTileDic = make_modes_per_tile_dic_with_const_modes_count(nTiles, minMumModes)
+              numModesChosen = 0
+              if 'min' in modeSettingIt_key:
+                numModesChosen = np.min(list(modesPerTileDicTmp.values()))
+              else:
+                numModesChosen = np.max(list(modesPerTileDicTmp.values()))
+
+              modesPerTileDic = make_modes_per_tile_dic_with_const_modes_count(nTiles, numModesChosen)
 
               projectorDir = path_to_gappy_projector_dir(workDir, "basedOnFactorOfStateModes",\
                                                          partitionStringIdentifier, \
