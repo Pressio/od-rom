@@ -221,6 +221,52 @@ odrom_partitions[5] = {'rectangularUniform' : [[3,3], [9,9]]}
 sample_meshes[5] = [["psampling", 0.1, 0], ["psampling", 0.05, 0]]
 
 
+
+'''
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+'''
+base_dic[6] = {
+  'fom' : {
+    'meshSize': [256, 256],
+    'finalTimeTrain': 8.0,
+    'finalTimeTest' : 8.0,
+    'inviscidFluxReconstruction' : "Weno5",
+    'odeScheme': "RK4", 'dt' : 0.0025,
+    'stateSamplingFreqTrain': 4,
+    'velocitySamplingFreq'  : 4
+  },
+
+  'stateSamplingFreqTest' : 20,
+
+  'odrom' : {
+    'finalTime': 8.0,   'inviscidFluxReconstruction' : "Weno5",
+    'odeScheme': "RK4", 'dt' : 0.005
+  },
+
+  'physicalCoefficients' : {
+    'gravity' : 9.8, 'coriolis'  : "tbd", 'pulsemag'  : 0.125
+  }
+}
+train_points[6] = {0: -4.0, 1: -3.0, 2: -2.0 }
+test_points[6]  = {0: -2.5, 1: -1.5}
+
+algos[6] = ["PodOdProjectionError", "PodOdGalerkinGappy"]
+
+use_ic_reference_state[6] = True
+basis_sets[6] = { 0: [0,1,2] }
+
+odrom_modes_setting_policies[6] = {'tileSpecificUsingEnergy' : [99.999]}
+
+odrom_min_num_modes_per_tile[6] = 1
+odrom_partitions[6] = {'rectangularUniform' : [[2,2],[3,3],[4,4],\
+                                               [5,5],[6,6],[7,7],\
+                                               [8,8],[9,9],[10,10]]}
+sample_meshes[6] = [["psampling", 0.1, 0]]
+
+
+
 '''
 @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 this scenario -1 is my playground, DO NOT RELY ON IT
