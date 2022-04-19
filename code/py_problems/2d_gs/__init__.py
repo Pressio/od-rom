@@ -1,5 +1,6 @@
 
 import pressiodemoapps as pda
+import sys
 from .scenarios import *
 
 dimensionality = 2
@@ -7,13 +8,12 @@ numDofsPerCell = 2
 
 # -------------------------------------------------------------------
 def create_problem_for_scenario(scenario, meshObj, coeffDic, dicIn, val):
-  probId   = pda.DiffusionReaction2d.GrayScott
   diff_A   = coeffDic['diffusionA']
   diff_B   = coeffDic['diffusionB']
   feedRate = coeffDic['feedRate']
   killRate = coeffDic['killRate']
 
-  if scenario == 1:
+  if scenario in [1,2]:
     feedRate = val
   else:
     sys.exit("invalid scenario {} for 2d_gs".format(scenario))

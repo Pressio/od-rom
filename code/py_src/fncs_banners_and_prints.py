@@ -149,6 +149,11 @@ def banner_run_pod_od_galerkin_gappy_real():
   logger.info("\033[1;30;47mRun pod od Galerkin gappy real               " \
         + color_resetter())
 
+def banner_run_pod_od_galerkin_quad_real():
+  logger = logging.getLogger(__name__)
+  logger.info("\033[1;30;47mRun pod od Galerkin quad real                " \
+        + color_resetter())
+
 def banner_run_pod_od_galerkin_gappy_masked():
   logger = logging.getLogger(__name__)
   logger.info("\033[1;30;47mRun pod od Galerkin gappy masked             " \

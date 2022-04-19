@@ -41,7 +41,7 @@ from py_src.fncs_directory_naming import \
 
 from py_src.fncs_compute_phi_on_stencil import *
 
-from py_src.fncs_compute_projector import \
+from py_src.fncs_compute_gappy_projector import \
   compute_gappy_projector_using_factor_of_state_pod_modes
 
 from py_src.fncs_to_extract_from_mesh_info_file import *
@@ -121,14 +121,19 @@ def run_od_pod_galerkin_gappy_masked(workDir, problem, module, \
                                                                setId, smKeyword)
 
           #*********************************************************************
-          elif modeSettingIt_key == 'findMinValueAcrossTilesUsingEnergyAndUseInAllTiles':
+          elif modeSettingIt_key in ['findMinValueAcrossTilesUsingEnergyAndUseInAllTiles', \
+                                     'findMaxValueAcrossTilesUsingEnergyAndUseInAllTiles']:
           #*********************************************************************
             for energyValue in modeSettingIt_val:
               modesPerTileDicTmp = find_modes_per_tile_from_target_energy(module, scenario, \
                                                                           currStatePodDir, energyValue)
-              # find minimum value
-              minMumModes = np.min(list(modesPerTileDicTmp.values()))
-              modesPerTileDic = make_modes_per_tile_dic_with_const_modes_count(nTiles, minMumModes)
+              numModesChosen = 0
+              if 'min' in modeSettingIt_key:
+                numModesChosen = np.min(list(modesPerTileDicTmp.values()))
+              else:
+                numModesChosen = np.max(list(modesPerTileDicTmp.values()))
+
+              modesPerTileDic = make_modes_per_tile_dic_with_const_modes_count(nTiles, numModesChosen)
 
               projectorDir = path_to_gappy_projector_dir(workDir, "basedOnFactorOfStateModes",\
                                                          partitionStringIdentifier, \
