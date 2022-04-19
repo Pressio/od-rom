@@ -3,13 +3,15 @@
 
 \PB{Insert boilerplate discussion  about the need for ROMs here, with a focus on many-query problems in particular. } \\
 
-Motivations for ODROM: 
+Motivations for ODROM:
 
 \begin{itemize}
-\item Many hyper-reduction techniques lack robustness/accuracy guarantees in practice and in theory (cite Ben's work showing probabilistic bounds \cite{peherstorfer2020stability}). ROMs need to be more robust for widespread usage, and while over-sampling for hyper-reduction can work, it comes at a computational cost. 
+\item Many hyper-reduction techniques lack robustness/accuracy guarantees in practice and in theory (cite Ben's work showing probabilistic bounds \cite{peherstorfer2020stability}). ROMs need to be more robust for widespread usage, and while over-sampling for hyper-reduction can work, it comes at a computational cost.
 \item Classic projection-based ROMs struggle with advection-dominated problems; nonlinear basis approaches show promise, but are expensive to train
-\item Existing localized reduced-basis ROMs are derived for elliptic problems \cite{ohlberger2015error,antonietti2016discontinuous}; need a more generalized approach to extend to parabolic and hyperbolic partial differential equations. 
-\item Classic projection-based ROMs are not designed with HPC hardware in mind; we should design ROMs that can exploit modern (and future) computing devices, especially when used for solving many-query problems such as uncertainty quantification, parameter estimation, and design optimization. 
+\item Existing localized reduced-basis ROMs are derived for elliptic problems \cite{ohlberger2015error,antonietti2016discontinuous}; need a more generalized approach to extend to parabolic and hyperbolic partial differential equations.
+\item Classic projection-based ROMs are not designed with HPC hardware in mind; we should design ROMs that can exploit modern (and future) computing devices, especially when used for solving many-query problems such as uncertainty quantification, parameter estimation, and design optimization.
+\item The cost of doing standard galerkin for a given number of modes $K$ equals the cost of doing od-rom with $K$ modes per tile.
+  \item ROMs were originally developed for linear problems, where global POD modes result in low-dimensional systems. They were then extended to nonlinear problems, and people generally extended the same naive global basis and applied hyper-reduction to make things efficient, however in the nonlinear case the global basis no longer gives efficiency and using a local basis gives a high increase in accuracy without sacrificing efficiency (this is from Eric).
 \end{itemize}
 
 \PB{Introduce basic idea of ODROM, make sure to state how each motivation is addressed.} \\
