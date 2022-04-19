@@ -2,4 +2,35 @@
 
 \section{Results} \label{sec:results}
 
-The results presented below ...
+In this section, we present and discuss numerical results for the od-rom.
+Our goal is to use these results to clearly convey specific messages about this work.
+Specifically, we first want to show the expressive properties of the basis, ....
+Therefore, we organize this section ``by message''.
+For a given message/point to make, we show results for multiple problems.
+
+
+
+
+We use the following problems: the shallow-water equations in two dimensions, the Gray-Scott reaction-diffusion problem.
+These problems are taken from \href{https://pressio.github.io/pressio-demoapps}{\textsf{pressio-demoapps}} (PDA).
+PDA is an open-source project developed at Sandia National Laboratory that is aimed at providing benchmark ROM cases, and is part of the \href{https://pressio.github.io/}{\textsf{Pressio}} ecosystem.
+PDA include a cell-centered finite volume-based solver equipped with several flux schemes, exact Jacobians, sample mesh capabilities, and benchmark cases in one, two, and three dimensions.
+
+\subsection{Shallow Water Equations}
+
+The problem is described with the following system of PDE
+
+\begin{align}
+  \frac{\partial h}{\partial t} + \frac{\partial hu}{\partial x} + \frac{\partial hv}{\partial y} &= 0 \\
+  \frac{\partial hu}{\partial t} + \frac{\partial }{\partial x} (hu^2 + \frac{1}{2}g h^2) + \frac{\partial huv}{\partial y} &= -\mu v \\
+  \frac{\partial hv}{\partial t} + \frac{\partial huv}{\partial x} + \frac{\partial }{\partial y} (hv^2 + \frac{1}{2}g h^2) &= \mu u
+\end{align}
+
+where $h$ is the fluid column height, $g$ is gravity, $(u, v)$ are the fluid's horizontal velocities averaged across the vertical column.
+The domain is $[-5, 5]^2$ with slip-wall BCs and initial condition: $h = 1 + \alpha \exp( -(x-1)^2 - (y-1)^2)$, $u = v = 0$,
+with $\alpha = 1/8$ (initial pulse magnitude), $g = 9.8$ (gravity parameter), $\mu = -3.0$ (Coriolis parameter).
+
+
+\subsection{Gray-Scott Reaction Diffusion}
+
+The problem is described with the following system of PDE
