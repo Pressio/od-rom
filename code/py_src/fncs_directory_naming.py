@@ -111,6 +111,23 @@ def path_to_gappy_projector_dir(workDir, gappyPolicyName, \
   return s1 + sep + s2 + sep + s3 + sep + s4 + sep + s5 + sep + s6
 
 # -------------------------------------------------------------------
+def path_to_quad_projector_dir(workDir, partitioningKeyword, \
+                               setId, modeSettingPolicy, \
+                               energyValue, numModes, \
+                               smKeyword):
+  s1 = workDir + "/partition_based_"+partitioningKeyword
+  s2 = "quad_projector"
+  s3 = modeSettingPolicy
+  if energyValue != None:
+    s4 = str(energyValue)
+  if numModes != None:
+    s4 = str(numModes)
+  s5 = "using_"+smKeyword
+  s6 = "set_"+ str(setId)
+  sep = "_"
+  return s1 + sep + s2 + sep + s3 + sep + s4 + sep + s5 + sep + s6
+
+# -------------------------------------------------------------------
 def path_to_phi_on_stencil_dir(workDir, partitioningKeyword, \
                                setId, modeSettingPolicy, \
                                energyValue, numModes, smKeyword):
@@ -126,14 +143,3 @@ def path_to_phi_on_stencil_dir(workDir, partitioningKeyword, \
   s6 = "set_"+ str(setId)
   sep = "_"
   return s1 + sep + s2 + sep + s3 + sep + s4 + sep + s5 + sep + s6
-
-# -------------------------------------------------------------------
-def path_to_quad_projector_dir(workDir, partitioningKeyword, \
-                               setId, energyValue, smKeyword):
-  s1 = workDir + "/partition_based_"+partitioningKeyword
-  s2 = "quad_projector"
-  s3 = str(energyValue)
-  s4 = "set_"+ str(setId)
-  s5 = smKeyword
-  sep = "_"
-  return s1 + sep + s2 + sep + s3 + sep + s4 + sep + s5

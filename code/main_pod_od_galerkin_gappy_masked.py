@@ -41,7 +41,7 @@ from py_src.fncs_directory_naming import \
 
 from py_src.fncs_compute_phi_on_stencil import *
 
-from py_src.fncs_compute_projector import \
+from py_src.fncs_compute_gappy_projector import \
   compute_gappy_projector_using_factor_of_state_pod_modes
 
 from py_src.fncs_to_extract_from_mesh_info_file import *
@@ -127,8 +127,8 @@ def run_od_pod_galerkin_gappy_masked(workDir, problem, module, \
             for energyValue in modeSettingIt_val:
               modesPerTileDicTmp = find_modes_per_tile_from_target_energy(module, scenario, \
                                                                           currStatePodDir, energyValue)
-              numModesChosen = 0 
-              if 'min' in modeSettingIt_key: 
+              numModesChosen = 0
+              if 'min' in modeSettingIt_key:
                 numModesChosen = np.min(list(modesPerTileDicTmp.values()))
               else:
                 numModesChosen = np.max(list(modesPerTileDicTmp.values()))
