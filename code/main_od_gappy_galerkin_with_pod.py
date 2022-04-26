@@ -35,14 +35,14 @@ from py_src.fncs_directory_naming import \
   path_to_rhs_pod_data_dir, \
   string_identifier_from_partition_info_dir, \
   path_to_partition_based_full_mesh_dir, \
-  path_to_quad_projector_dir,\
+  path_to_gappy_projector_dir,\
   path_to_phi_on_stencil_dir, \
   string_identifier_from_sample_mesh_dir
 
 from py_src.fncs_compute_phi_on_stencil import *
 
-from py_src.fncs_compute_quad_projector import \
-  compute_quad_projector
+from py_src.fncs_compute_gappy_projector import \
+  compute_gappy_projector_using_factor_of_state_pod_modes
 
 from py_src.fncs_to_extract_from_mesh_info_file import *
 
@@ -50,7 +50,8 @@ from py_src.fncs_impl_od_galerkin_for_all_test_values import \
   run_hr_od_galerkin_for_all_test_values
 
 # -------------------------------------------------------------------
-def main_impl(workDir, problem, module, scenario, fomMeshPath):
+def run_od_pod_galerkin_gappy(workDir, problem, module, \
+                              scenario, fomMeshPath):
 
   # -------
   # loop 1: over all decompositions
@@ -60,15 +61,12 @@ def main_impl(workDir, problem, module, scenario, fomMeshPath):
     nTiles = np.loadtxt(partInfoDirIt+"/ntiles.txt", dtype=int)
 
     # -------
-    # loop 2: over all training sets
+    # loop 2: over all POD computed from various sets of train runs
     # ------
-    #howManySets = len(module.basis_sets[scenario].keys())
-    #for setId in range(howManySets):
-    for setId, trainIndices in module.basis_sets[scenario].items():
+    howManySets = len(module.basis_sets[scenario].keys())
+    for setId in range(howManySets):
       currStateFullPodDir = path_to_state_pod_data_dir(workDir, partitionStringIdentifier, setId)
-      trainDirs = [workDir+'/'+d for d in os.listdir(workDir) \
-                   if "train" in d and get_run_id(d) in trainIndices]
-      assert(len(trainDirs) == len(trainIndices))
+      currRhsFullPodDir   = path_to_rhs_pod_data_dir(workDir, partitionStringIdentifier, setId)
 
       # -------
       # loop 3: over all samples meshes
@@ -89,19 +87,19 @@ def main_impl(workDir, problem, module, scenario, fomMeshPath):
               # all tiles have same modes, so find what that is
               numOfModes = modesPerTileDic[0]
 
-              projectorDir = path_to_quad_projector_dir(workDir, partitionStringIdentifier, \
-                                                        setId, modeSettingIt_key, \
-                                                        None, numOfModes, smKeyword)
+              projectorDir = path_to_gappy_projector_dir(workDir, "basedOnFactorOfStateModes",\
+                                                         partitionStringIdentifier, \
+                                                         setId, modeSettingIt_key, \
+                                                         None, numOfModes, smKeyword)
               if os.path.exists(projectorDir):
                 logging.info('{} already exists'.format(os.path.basename(projectorDir)))
               else:
                 logging.info('Generating {}'.format(os.path.basename(projectorDir)))
                 os.system('mkdir -p ' + projectorDir)
-
-                compute_quad_projector(trainDirs, fomMeshPath, projectorDir, \
-                                       partInfoDirIt, currStateFullPodDir, \
-                                       sampleMeshDirIt, modesPerTileDic,
-                                       module.numDofsPerCell)
+                compute_gappy_projector_using_factor_of_state_pod_modes(projectorDir, partInfoDirIt, \
+                                                                        currStateFullPodDir, currRhsFullPodDir,\
+                                                                        sampleMeshDirIt, modesPerTileDic,
+                                                                        module.numDofsPerCell)
 
               phiOnStencilDir = path_to_phi_on_stencil_dir(workDir, partitionStringIdentifier, \
                                                            setId, modeSettingIt_key,\
@@ -121,7 +119,7 @@ def main_impl(workDir, problem, module, scenario, fomMeshPath):
                                                      currStateFullPodDir, projectorDir,
                                                      phiOnStencilDir, modeSettingIt_key, \
                                                      None, modesPerTileDic, \
-                                                     setId, smKeyword, "quad")
+                                                     setId, smKeyword, "gappy")
 
           #*********************************************************************
           elif modeSettingIt_key in ['findMinValueAcrossTilesUsingEnergyAndUseInAllTiles', \
@@ -138,18 +136,19 @@ def main_impl(workDir, problem, module, scenario, fomMeshPath):
 
               modesPerTileDic = make_modes_per_tile_dic_with_const_modes_count(nTiles, numModesChosen)
 
-              projectorDir = path_to_quad_projector_dir(workDir, partitionStringIdentifier, \
-                                                        setId, modeSettingIt_key, \
-                                                        energyValue, None, smKeyword)
+              projectorDir = path_to_gappy_projector_dir(workDir, "basedOnFactorOfStateModes",\
+                                                         partitionStringIdentifier, \
+                                                         setId, modeSettingIt_key, \
+                                                         energyValue, None, smKeyword)
               if os.path.exists(projectorDir):
                 logging.info('{} already exists'.format(os.path.basename(projectorDir)))
               else:
                 logging.info('Generating {}'.format(os.path.basename(projectorDir)))
                 os.system('mkdir -p ' + projectorDir)
-                compute_quad_projector(trainDirs, fomMeshPath, projectorDir, \
-                                       partInfoDirIt, currStateFullPodDir, \
-                                       sampleMeshDirIt, modesPerTileDic,
-                                       module.numDofsPerCell)
+                compute_gappy_projector_using_factor_of_state_pod_modes(projectorDir, partInfoDirIt, \
+                                                                        currStateFullPodDir, currRhsFullPodDir,\
+                                                                        sampleMeshDirIt, modesPerTileDic,
+                                                                        module.numDofsPerCell)
 
               phiOnStencilDir = path_to_phi_on_stencil_dir(workDir, partitionStringIdentifier, \
                                                            setId, modeSettingIt_key,\
@@ -169,29 +168,29 @@ def main_impl(workDir, problem, module, scenario, fomMeshPath):
                                                      currStateFullPodDir, projectorDir,
                                                      phiOnStencilDir, modeSettingIt_key, \
                                                      energyValue, modesPerTileDic, \
-                                                     setId, smKeyword, "quad")
+                                                     setId, smKeyword, "gappy")
 
           #*********************************************************************
           elif modeSettingIt_key == 'tileSpecificUsingEnergy':
           #*********************************************************************
             for energyValue in modeSettingIt_val:
               modesPerTileDic = find_modes_per_tile_from_target_energy(module, scenario, \
-                                                                       currStateFullPodDir, \
-                                                                       energyValue)
-              projectorDir = path_to_quad_projector_dir(workDir, partitionStringIdentifier, \
-                                                        setId, modeSettingIt_key, \
-                                                        energyValue, None, smKeyword)
+                                                                       currStateFullPodDir, energyValue)
+              projectorDir = path_to_gappy_projector_dir(workDir, "basedOnFactorOfStateModes",\
+                                                         partitionStringIdentifier, \
+                                                         setId, modeSettingIt_key, \
+                                                         energyValue, None, smKeyword)
               if os.path.exists(projectorDir):
                 logging.info('{} already exists'.format(os.path.basename(projectorDir)))
               else:
                 logging.info('Generating {}'.format(os.path.basename(projectorDir)))
                 os.system('mkdir -p ' + projectorDir)
+                compute_gappy_projector_using_factor_of_state_pod_modes(projectorDir, partInfoDirIt, \
+                                                                        currStateFullPodDir, currRhsFullPodDir,\
+                                                                        sampleMeshDirIt, modesPerTileDic,
+                                                                        module.numDofsPerCell)
 
-                compute_quad_projector(trainDirs, fomMeshPath, projectorDir, \
-                                       partInfoDirIt, currStateFullPodDir, \
-                                       sampleMeshDirIt, modesPerTileDic,
-                                       module.numDofsPerCell)
-
+              # compute phi on stencil for each tile if needed
               phiOnStencilDir = path_to_phi_on_stencil_dir(workDir, partitionStringIdentifier, \
                                                            setId, modeSettingIt_key,\
                                                            energyValue, None, smKeyword)
@@ -210,7 +209,7 @@ def main_impl(workDir, problem, module, scenario, fomMeshPath):
                                                      currStateFullPodDir, projectorDir,
                                                      phiOnStencilDir, modeSettingIt_key, \
                                                      energyValue, modesPerTileDic, \
-                                                     setId, smKeyword, "quad")
+                                                     setId, smKeyword, "gappy")
 
 # -------------------------------------------------------------------
 def setLogger():
@@ -243,8 +242,8 @@ if __name__ == '__main__':
   check_and_print_problem_summary(problem, module)
   logging.info("")
 
-  if "PodOdGalerkinQuad" in module.algos[scenario]:
-    banner_run_pod_od_galerkin_quad_real()
+  if "OdGappyGalerkinWithTileLocalPodBases" in module.algos[scenario]:
+    banner_run_pod_od_galerkin_gappy_real()
 
     # before we move on, we need to ensure that in workDir
     # there is a unique FULL mesh. This is because the mesh is specified
@@ -253,7 +252,7 @@ if __name__ == '__main__':
     # run this script again with a different working directory
     fomMeshPath = find_full_mesh_and_ensure_unique(workDir)
 
-    main_impl(workDir, problem, module, scenario, fomMeshPath)
+    run_od_pod_galerkin_gappy(workDir, problem, module, scenario, fomMeshPath)
 
   else:
     logging.info("Nothing to do here")

@@ -164,7 +164,7 @@ if __name__ == '__main__':
   check_and_print_problem_summary(problem, module)
   logging.info("")
 
-  if "PodStandardGalerkinGappy" in module.algos[scenario]:
+  if "GlobalGappyGalerkinWithPodBases" in module.algos[scenario]:
 
     # before we move on, we need to ensure that in workDir
     # there is a unique FULL mesh. This is because the mesh is specified

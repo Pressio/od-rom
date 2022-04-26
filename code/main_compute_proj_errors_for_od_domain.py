@@ -145,8 +145,8 @@ def compute_od_pod_projection_errors(workDir, problem, module, scenario):
           for energyValue in modeSettingIt_val:
             modesPerTileDicTmp = find_modes_per_tile_from_target_energy(module, scenario, \
                                                                         currPodDir, energyValue)
-            numModesChosen = 0 
-            if 'min' in modeSettingIt_key: 
+            numModesChosen = 0
+            if 'min' in modeSettingIt_key:
               numModesChosen = np.min(list(modesPerTileDicTmp.values()))
             else:
               numModesChosen = np.max(list(modesPerTileDicTmp.values()))
@@ -222,7 +222,7 @@ if __name__ == '__main__':
   check_and_print_problem_summary(problem, module)
   logging.info("")
 
-  if "PodOdProjectionError" in module.algos[scenario]:
+  if "ProjectionErrorUsingTileLocalPod" in module.algos[scenario]:
     banner_compute_od_projection_error()
     compute_od_pod_projection_errors(workDir, problem, module, scenario)
   else:

@@ -51,8 +51,12 @@ if __name__ == '__main__':
   #-----------------------------------
   fomStatesReconstructed = np.zeros_like(fomStatesPossiblyCentered, order='F')
   phiFile = podDir + "/lsv_state_p_0"
-  phi     = load_basis_from_binary_file(phiFile)[:,0:numModes]
-  tmpY    = np.dot(phi.transpose(), fomStatesPossiblyCentered)
+  phi0    = load_basis_from_binary_file(phiFile)
+  if numModes > phi0.shape[1]:
+    sys.exit("desired num modes is > available bases")
+
+  phi  = phi0[:,0:numModes]
+  tmpY = np.dot(phi.transpose(), fomStatesPossiblyCentered)
   fomStatesReconstructed = np.dot(phi, tmpY)
 
   if useRefState:

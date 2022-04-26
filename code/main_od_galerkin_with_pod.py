@@ -135,7 +135,7 @@ def run_full_od_galerkin_for_all_test_values(workDir, problem, \
     else:
       logging.info("Running odrom in {}".format(os.path.basename(outDir)))
       os.system('mkdir -p ' + outDir)
-      romRunDic    = module.base_dic[scenario]['odrom'].copy()
+      romRunDic    = module.base_dic[scenario]['rom'].copy()
       coeffDic     = module.base_dic[scenario]['physicalCoefficients'].copy()
       appObjForIc  = None
       appObjForRom = None
@@ -309,8 +309,8 @@ def run_od_pod_galerkin_full(workDir, problem, module, \
             modesPerTileDicTmp = find_modes_per_tile_from_target_energy(module, scenario, \
                                                                         currPodDir, energyValue)
 
-            numModesChosen = 0 
-            if 'min' in modeSettingIt_key: 
+            numModesChosen = 0
+            if 'min' in modeSettingIt_key:
               numModesChosen = np.min(list(modesPerTileDicTmp.values()))
             else:
               numModesChosen = np.max(list(modesPerTileDicTmp.values()))
@@ -372,19 +372,15 @@ if __name__ == '__main__':
   # run this script again with a different working directory
   fomMeshPath = find_full_mesh_and_ensure_unique(workDir)
 
-  if "PodOdGalerkin" in module.algos[scenario]:
+  if "OdGalerkinWithTileLocalPodBases" in module.algos[scenario]:
     banner_run_pod_od_galerkin()
 
-
-    # --------------------------------------
-    # needed if we are doing PodOdGalerkinFull or LegendreOdGalerkinFull
-    # indeed, for od-rom without HR, for performance reasons,
+    # for od-rom without HR, for performance reasons,
     # we don't/should not use the same full mesh used in the fom.
     # We need to make a new full mesh with a new indexing
     # that is consistent with the partitions and allows continguous storage
     # of the state and rhs within each tile
-    if "PodOdGalerkin"   in module.algos[scenario] or \
-       "PolyOdGalerkinFully" in module.algos[scenario]:
+    if "OdGalerkinWithTileLocalPodBases"  in module.algos[scenario]:
       banner_make_full_meshes_with_partition_based_indexing()
       make_full_mesh_for_odrom_using_partition_based_indexing(workDir, \
                                                               pdaDir, \

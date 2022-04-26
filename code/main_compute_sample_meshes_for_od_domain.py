@@ -268,13 +268,11 @@ if __name__ == '__main__':
   # run this script again with a different working directory
   fomMeshPath = find_full_mesh_and_ensure_unique(workDir)
 
-  # --------------------------------------
   banner_make_sample_meshes_all_partitions()
-  # --------------------------------------
-  if "PodOdGalerkinGappy"       in module.algos[scenario] or \
-     "PodOdGalerkinGappyMasked" in module.algos[scenario] or \
-     "PodOdGalerkinQuad"        in module.algos[scenario]:
-
+  triggers = ["OdGappyGalerkinWithTileLocalPod", \
+              "OdMaskedGappyGalerkinWithTileLocalPod", \
+              "OdQuadGalerkinWithTileLocalPod"]
+  if any(x in triggers for x in module.algos[scenario]):
     sampleMeshesList = module.sample_meshes[scenario]
 
     if any(["random" in it for it in sampleMeshesList]):

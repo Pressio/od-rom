@@ -69,7 +69,7 @@ def run_hr_od_galerkin_for_all_test_values(workDir, problem, \
       logger.info("Running odrom in {}".format(os.path.basename(outDir)))
       os.system('mkdir -p ' + outDir)
 
-      romRunDic    = module.base_dic[scenario]['odrom'].copy()
+      romRunDic    = module.base_dic[scenario]['rom'].copy()
       coeffDic     = module.base_dic[scenario]['physicalCoefficients'].copy()
       appObjForIc  = None
       appObjForRom = None
@@ -223,7 +223,7 @@ def run_masked_gappy_od_galerkin_for_all_test_values(workDir, problem, \
       logger.info("Running odrom in {}".format(os.path.basename(outDir)))
       os.system('mkdir -p ' + outDir)
 
-      romRunDic    = module.base_dic[scenario]['odrom'].copy()
+      romRunDic    = module.base_dic[scenario]['rom'].copy()
       coeffDic     = module.base_dic[scenario]['physicalCoefficients'].copy()
 
       appObj = module.create_problem_for_scenario(scenario, meshObj, \

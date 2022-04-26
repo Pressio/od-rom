@@ -32,7 +32,7 @@ test_points[1]  = {0: 0.04, 1: 0.06, 2: 0.075, 3: 0.025}
 use_ic_reference_state[1] = True
 basis_sets[1] = { 0: [0,1,2] }
 
-algos[1] = ["PodStandardProjectionError", "PodOdProjectionError"]
+algos[1] = ["ProjectionErrorUsingGlobalPod", "ProjectionErrorUsingTileLocalPodBases"]
 
 standardrom_modes_setting_policies[1] = {'userDefinedValue' : [10, 50, 100, 200, 500]}
 
@@ -57,7 +57,7 @@ base_dic[2] = {
     'stateSamplingFreqTrain' : 10,
     'velocitySamplingFreq'   : 10
   },
-  'odrom' : {
+  'rom' : {
     'finalTime': 2000.0,
     'odeScheme': "RK4",
     'dt' : 0.4
@@ -76,7 +76,7 @@ train_points[2] = train_points[1]
 test_points[2]  = test_points[1]
 use_ic_reference_state[2] = use_ic_reference_state[1]
 basis_sets[2] = basis_sets[1]
-algos[2] = ["PodOdGalerkin", "PodOdGalerkinGappy"]
+algos[2] = ["OdGalerkinWithTileLocalPodBases", "OdGappyGalerkinWithTileLocalPodBases"]
 
 odrom_modes_setting_policies[2] = { 'tileSpecificUsingEnergy' : [99.99], \
                                     'allTilesUseTheSameUserDefinedValue' : [10, 15, 20],

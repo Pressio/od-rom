@@ -92,7 +92,7 @@ def run_full_standard_galerkin_for_all_test_values(workDir, problem, \
     else:
       logging.info("Running standard rom in {}".format(os.path.basename(outDir)))
       os.system('mkdir -p ' + outDir)
-      romRunDic = module.base_dic[scenario]['odrom'].copy()
+      romRunDic = module.base_dic[scenario]['rom'].copy()
       coeffDic  = module.base_dic[scenario]['physicalCoefficients'].copy()
       appObj    = module.create_problem_for_scenario(scenario, meshObj, \
                                                      coeffDic, romRunDic, val)
@@ -247,7 +247,7 @@ if __name__ == '__main__':
   check_and_print_problem_summary(problem, module)
   logging.info("")
 
-  if "PodStandardGalerkin" in module.algos[scenario]:
+  if "GlobalGalerkinWithPodBases" in module.algos[scenario]:
 
     # before we move on, we need to ensure that in workDir
     # there is a unique FULL mesh. This is because the mesh is specified

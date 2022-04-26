@@ -121,12 +121,11 @@ if __name__ == '__main__':
   check_and_print_problem_summary(problem, module)
   logging.info("")
 
-  triggers = ["PodOdGalerkin", \
-              "PodOdProjectionError", \
-              "PodOdGalerkinGappy", \
-              "PodOdGalerkinGappyMasked", \
-              "PodOdGalerkinQuad", \
-              "LegendreOdGalerkinFull"]
+  triggers = ["ProjectionErrorUsingTileLocalPod", \
+              "OdGalerkinWithTileLocalPodBases", \
+              "OdGappyGalerkinWithTileLocalPod", \
+              "OdMaskedGappyGalerkinWithTileLocalPod", \
+              "OdQuadGalerkinWithTileLocalPod"]
   if any(x in triggers for x in module.algos[scenario]):
     banner_make_partitions()
 

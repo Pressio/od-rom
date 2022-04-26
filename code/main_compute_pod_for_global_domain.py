@@ -104,10 +104,9 @@ if __name__ == '__main__':
   check_and_print_problem_summary(problem, module)
 
   # we need to compute global POD if any of the
-  # following target algorithms is present in the scenario
-  triggers = ["PodStandardGalerkin", \
-              "PodStandardGalerkinGappy",\
-              "PodStandardProjectionError"]
+  # following is present in the target scenario
+  triggers = ["GlobalGalerkinWithPodBases", \
+              "ProjectionErrorUsingGlobalPod"]
   if any(x in triggers for x in module.algos[scenario]):
     banner_compute_full_pod()
 

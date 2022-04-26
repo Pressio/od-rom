@@ -174,20 +174,21 @@ if __name__ == '__main__':
   # run this script again with a different working directory
   fomMeshPath = find_full_mesh_and_ensure_unique(workDir)
 
+  triggers = ["ProjectionErrorUsingTileLocalPod", \
+              "OdGalerkinWithTileLocalPodBases", \
+              "OdGappyGalerkinWithTileLocalPod", \
+              "OdMaskedGappyGalerkinWithTileLocalPod", \
+              "OdQuadGalerkinWithTileLocalPod"]
   mustDoPodModesForEachTile = False
-  if "PodOdGalerkin"        in module.algos[scenario] or \
-     "PodOdGalerkinGappy"   in module.algos[scenario] or \
-     "PodOdGalerkinMasked"  in module.algos[scenario] or \
-     "PodOdGalerkinQuad"    in module.algos[scenario] or \
-     "PodOdProjectionError" in module.algos[scenario]:
+  if any(x in triggers for x in module.algos[scenario]):
     mustDoPodModesForEachTile = True
 
-  # if scenario has PolyOdGalerkin and the poly_order = -1
-  # because poly_order = -1 indicates that we compute the poly order
-  # in each tile such that we match as possible the number of local pod modes
-  if "PolyOdGalerkinFull" in module.algos[scenario] and \
-     -1 in module.odrom_poly_order[scenario]:
-    mustDoPodModesForEachTile = True
+  # # if scenario has PolyOdGalerkin and the poly_order = -1
+  # # because poly_order = -1 indicates that we compute the poly order
+  # # in each tile such that we match as possible the number of local pod modes
+  # if "PolyOdGalerkinFull" in module.algos[scenario] and \
+  #    -1 in module.odrom_poly_order[scenario]:
+  #   mustDoPodModesForEachTile = True
 
   if mustDoPodModesForEachTile:
     banner_compute_pod_all_partitions()
