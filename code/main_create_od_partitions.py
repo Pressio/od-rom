@@ -121,12 +121,10 @@ if __name__ == '__main__':
   check_and_print_problem_summary(problem, module)
   logging.info("")
 
-  triggers = ["ProjectionErrorUsingTileLocalPod", \
-              "OdGalerkinWithTileLocalPodBases", \
-              "OdGappyGalerkinWithTileLocalPod", \
-              "OdMaskedGappyGalerkinWithTileLocalPod", \
-              "OdQuadGalerkinWithTileLocalPod"]
-  if any(x in triggers for x in module.algos[scenario]):
+  matchers = ["ProjectionErrorUsingTiledPodBases", "OdGalerkin", \
+              "OdGappyGalerkin", "OdMaskedGappy", "OdQuadGalerkin"]
+  matching = [s for s in module.algos[scenario] if any(xs in s for xs in matchers)]
+  if matching:
     banner_make_partitions()
 
     # before we move on, we need to ensure that in workDir

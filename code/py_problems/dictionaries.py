@@ -21,14 +21,14 @@ algos = {}
 list of strings to set which algos to run
 
 choices:
-  GlobalGalerkinWithPodBases             # standard global galerkin with pod
-  ProjectionErrorUsingGlobalPod          # projection error full domain
+  "GlobalGalerkinWithPodBases"          : standard global galerkin with pod
+  "ProjectionErrorUsingGlobalPodBases"  : projection error on full domain
 
-  ProjectionErrorUsingTileLocalPodBases       # projection error for odrom
-  OdGalerkinWithTileLocalPodBases             # od galerkin
-  OdGappyGalerkinWithTileLocalPodBases        # od gappy galerkin with real HR
-  OdMaskedGappyGalerkinWithTileLocalPodBases  # od gappy galerkin via mask
-  OdQuadGalerkinWithTileLocalPodBases         # od galerkin with quad projector
+  "ProjectionErrorUsingTiledPodBases"   : projection error for od
+  "OdGalerkinWithPodBases"              : od galerkin using pod 
+  "OdGappyGalerkinWithPodBases"         : od gappy galerkin with real HR using pod
+  "OdMaskedGappyGalerkinWithPodBases"   : od gappy galerkin via masked using pod 
+  "OdQuadGalerkinWithPodBases"          : od galerkin with quad projector using pod 
 '''
 
 #==============================================================
@@ -36,6 +36,15 @@ basis_sets = {}
 #==============================================================
 '''
 the sets of training runs to use for doing pod
+'''
+
+#==============================================================
+odrom_tile_based_or_split_global = {}
+#==============================================================
+'''
+choose from "TileBased", "SplitGlobal"
+- "TileBased": means that tile-local data is used for pod modes
+- "SplitGlobal": means that tile pod modes are computed from global modes
 '''
 
 #==============================================================

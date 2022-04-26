@@ -243,7 +243,7 @@ if __name__ == '__main__':
   check_and_print_problem_summary(problem, module)
   logging.info("")
 
-  if "OdMaskedGappyGalerkinWithTileLocalPodBases" in module.algos[scenario]:
+  if "OdMaskedGappyGalerkinWithPodBases" in module.algos[scenario]:
     banner_run_pod_od_galerkin_gappy_masked()
 
     # before we move on, we need to ensure that in workDir

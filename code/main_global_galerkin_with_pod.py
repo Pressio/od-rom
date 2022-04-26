@@ -248,14 +248,7 @@ if __name__ == '__main__':
   logging.info("")
 
   if "GlobalGalerkinWithPodBases" in module.algos[scenario]:
-
-    # before we move on, we need to ensure that in workDir
-    # there is a unique FULL mesh. This is because the mesh is specified
-    # via command line argument and must be unique for a scenario.
-    # If one wants to run for a different mesh, then they have to
-    # run this script again with a different working directory
     fomMeshPath = find_full_mesh_and_ensure_unique(workDir)
-
     banner_pod_standard_galerkin()
     run_standard_pod_galerkin_full(workDir, problem, module, scenario, fomMeshPath)
   else:

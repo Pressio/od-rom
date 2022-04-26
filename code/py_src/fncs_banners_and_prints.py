@@ -119,9 +119,14 @@ def banner_make_partitions():
   logger.info("\033[1;30;47mPartitioning domain                          " \
         + color_resetter())
 
-def banner_compute_pod_all_partitions():
+def banner_compute_pod_all_partitions_local_snaps():
   logger = logging.getLogger(__name__)
-  logger.info("\033[1;30;47mCompute POD for all partitions               " \
+  logger.info("\033[1;30;47mCompute POD for all partitions local snaps   " \
+        + color_resetter())
+
+def banner_compute_pod_all_partitions_via_splitting():
+  logger = logging.getLogger(__name__)
+  logger.info("\033[1;30;47mCompute POD for all partitions via splitting " \
         + color_resetter())
 
 def banner_make_sample_meshes_all_partitions():

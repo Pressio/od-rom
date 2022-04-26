@@ -77,10 +77,10 @@ def path_to_od_sample_mesh_random(workDir, partitioningKeyword, fraction):
   return s1 + "_" + s2
 
 # -------------------------------------------------------------------
-def path_to_od_sample_mesh_psampling(workDir, partitioningKeyword, setId, \
-                                     fraction, dofToUseForFindingCells):
+def path_to_od_sample_mesh_psampling(workDir, partitioningKeyword, \
+                                     setId, fraction, dofToUseForFindingCells):
   s1 = workDir + "/partition_based_"+partitioningKeyword
-  s2 = "sample_mesh_psampling_set_"+str(setId)
+  s2 = "sample_mesh_psampling" + "_set_"+str(setId)
   s3 = "dofid_{}".format(dofToUseForFindingCells)
   s4 = "fraction_{:3.3f}".format(fraction)
   return s1 + "_" + s2 + "_" + s3 + "_" + s4

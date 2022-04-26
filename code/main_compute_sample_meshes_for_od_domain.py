@@ -140,6 +140,7 @@ def compute_sample_mesh_random_od(workDir, module, scenario, pdaDir, fomMeshPath
 
 # -------------------------------------------------------------------
 def compute_sample_mesh_psampling_od(workDir, module, scenario, pdaDir, fomMeshPath):
+
   # get list of sample mesh cases, filter only those having "psampling" in it
   sampleMeshesList = [it for it in module.sample_meshes[scenario]\
                       if "psampling" in it]
@@ -178,8 +179,7 @@ def compute_sample_mesh_psampling_od(workDir, module, scenario, pdaDir, fomMeshP
         whichDofToUseForFindingCells = sampleMeshCaseIt[2]
 
         # name of where to generate files
-        outDir = path_to_od_sample_mesh_psampling(workDir,\
-                                                  partitionStringIdentifier, \
+        outDir = path_to_od_sample_mesh_psampling(workDir, partitionStringIdentifier, \
                                                   setId, fractionNeeded, \
                                                   whichDofToUseForFindingCells)
         if os.path.exists(outDir):
@@ -269,10 +269,10 @@ if __name__ == '__main__':
   fomMeshPath = find_full_mesh_and_ensure_unique(workDir)
 
   banner_make_sample_meshes_all_partitions()
-  triggers = ["OdGappyGalerkinWithTileLocalPod", \
-              "OdMaskedGappyGalerkinWithTileLocalPod", \
-              "OdQuadGalerkinWithTileLocalPod"]
-  if any(x in triggers for x in module.algos[scenario]):
+
+  matchers = ["Gappy", "Quad"]
+  matching = [s for s in module.algos[scenario] if any(xs in s for xs in matchers)]
+  if matching:
     sampleMeshesList = module.sample_meshes[scenario]
 
     if any(["random" in it for it in sampleMeshesList]):

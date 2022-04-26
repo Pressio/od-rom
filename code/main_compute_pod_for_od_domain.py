@@ -15,19 +15,66 @@ from py_src.fncs_myio import \
   read_scenario_from_dir, \
   read_problem_name_from_dir,\
   load_fom_state_snapshot_matrix, \
-  load_fom_rhs_snapshot_matrix
+  load_fom_rhs_snapshot_matrix, \
+  load_basis_from_binary_file
 
 from py_src.fncs_directory_naming import \
   path_to_partition_info_dir, \
   path_to_state_pod_data_dir, \
   path_to_rhs_pod_data_dir, \
-  string_identifier_from_partition_info_dir
+  string_identifier_from_partition_info_dir,\
+  path_to_full_domain_state_pod_data_dir, \
+  path_to_full_domain_rhs_pod_data_dir
 
 from py_src.fncs_fom_run_dirs_detection import \
   find_fom_train_dirs_for_target_set_of_indices
 
 from py_src.fncs_to_extract_from_mesh_info_file import *
 from py_src.fncs_svd import do_svd_py
+
+# -------------------------------------------------------------------
+def compute_split_impl(workDir, module, scenario, setId, fomMeshPath, stateOrRhsString):
+
+  fullDomainPodDir = path_to_full_domain_state_pod_data_dir(workDir, setId) \
+    if stateOrRhsString == "state" else path_to_full_domain_rhs_pod_data_dir(workDir, setId)
+
+  needToLoadGlobalLsv = True
+  globalLsv = None
+  for partitionInfoDirIt in find_all_partitions_info_dirs(workDir):
+    # need an identifier from this partition directory so that I can
+    # use it to uniquely associate a directory where we store the POD
+    stringIdentifier = string_identifier_from_partition_info_dir(partitionInfoDirIt)
+    nTiles = np.loadtxt(partitionInfoDirIt+"/ntiles.txt", dtype=int)
+
+    outDir = path_to_state_pod_data_dir(workDir, stringIdentifier, setId) \
+      if stateOrRhsString == "state" else \
+         path_to_rhs_pod_data_dir(workDir, stringIdentifier, setId)
+
+    if os.path.exists(outDir):
+      logging.info('{} already exists'.format(outDir))
+    else:
+      os.system('mkdir -p ' + outDir)
+
+      # only load global lsv once
+      if needToLoadGlobalLsv:
+        needToLoadGlobalLsv = False
+        globalLsv = load_basis_from_binary_file(fullDomainPodDir+"/lsv_"+stateOrRhsString+"_p_0")
+        logging.debug("global_lsv.shape = {}".format(globalLsv.shape))
+
+      # loop over each tile
+      for tileId in range(nTiles):
+        myFile = partitionInfoDirIt + "/state_vec_rows_wrt_full_mesh_p_"+str(tileId)+".txt"
+        myRows = np.loadtxt(myFile, dtype=int)
+        mySlice = globalLsv[myRows, :]
+
+        # do svd to reorthogonalize
+        #U,S,_ = scipyla.svd(mySlice, full_matrices=False, lapack_driver='gesdd')
+        #U,_ = np.linalg.qr(mySlice, mode='reduced')
+        logging.debug(" split pod for tileId={:>5} with lsvSlice.Shape={}".format(tileId, mySlice.shape))
+        lsvFile = outDir + "/lsv_"+stateOrRhsString+"_p_"+str(tileId)
+        svaFile = outDir + "/sva_"+stateOrRhsString+"_p_"+str(tileId)
+        do_svd_py(mySlice, lsvFile, svaFile)
+
 
 # -------------------------------------------------------------------
 def compute_partition_based_state_pod(workDir, module, scenario, \
@@ -70,15 +117,13 @@ def compute_partition_based_state_pod(workDir, module, scenario, \
 
       # loop over each tile
       for tileId in range(nTiles):
-        # I need to compute POD for both STATE and RHS
-        # using FOM data LOCAL to myself, so need to load
         # which rows of the FOM state I own and use to slice
         myFile = partitionInfoDirIt + "/state_vec_rows_wrt_full_mesh_p_"+str(tileId)+".txt"
         myRowsInFullState = np.loadtxt(myFile, dtype=int)
 
         # use the row indices to get only the data that belongs to me
         myStateEntries = fomStateSnapsFullDomain[myRowsInFullState, :]
-        logging.debug(" state pod for tileId={:>5} with stateSlice.Shape={}".format(tileId, myStateEntries.shape))
+        logging.debug(" state pod for tileId={:>5} with snapsSlice.Shape={}".format(tileId, myStateEntries.shape))
 
         lsvFile = outDir + '/lsv_state_p_'+str(tileId)
         svaFile = outDir + '/sva_state_p_'+str(tileId)
@@ -174,24 +219,8 @@ if __name__ == '__main__':
   # run this script again with a different working directory
   fomMeshPath = find_full_mesh_and_ensure_unique(workDir)
 
-  triggers = ["ProjectionErrorUsingTileLocalPod", \
-              "OdGalerkinWithTileLocalPodBases", \
-              "OdGappyGalerkinWithTileLocalPod", \
-              "OdMaskedGappyGalerkinWithTileLocalPod", \
-              "OdQuadGalerkinWithTileLocalPod"]
-  mustDoPodModesForEachTile = False
-  if any(x in triggers for x in module.algos[scenario]):
-    mustDoPodModesForEachTile = True
-
-  # # if scenario has PolyOdGalerkin and the poly_order = -1
-  # # because poly_order = -1 indicates that we compute the poly order
-  # # in each tile such that we match as possible the number of local pod modes
-  # if "PolyOdGalerkinFull" in module.algos[scenario] and \
-  #    -1 in module.odrom_poly_order[scenario]:
-  #   mustDoPodModesForEachTile = True
-
-  if mustDoPodModesForEachTile:
-    banner_compute_pod_all_partitions()
+  if module.odrom_tile_based_or_split_global[scenario] == "TileBased":
+    banner_compute_pod_all_partitions_local_snaps()
 
     for setId, trainIndices in module.basis_sets[scenario].items():
       logging.info("partition-local POD for setId = {}".format(setId))
@@ -202,5 +231,26 @@ if __name__ == '__main__':
       logging.info("")
       compute_partition_based_rhs_pod(workDir, module, scenario, \
                                       setId, trainDirs, fomMeshPath)
+
+  elif module.odrom_tile_based_or_split_global[scenario] == "SplitGlobal":
+    banner_compute_pod_all_partitions_via_splitting()
+
+    for setId, trainIndices in module.basis_sets[scenario].items():
+      logging.info("partition-split POD for setId = {}".format(setId))
+      print(35*"-")
+
+      compute_split_impl(workDir, module, scenario, setId, fomMeshPath, "state")
+      logging.info("")
+      compute_split_impl(workDir, module, scenario, setId, fomMeshPath, "rhs")
+
   else:
     logging.info("Nothing to do here")
+
+
+
+  # # # if scenario has PolyOdGalerkin and the poly_order = -1
+  # # # because poly_order = -1 indicates that we compute the poly order
+  # # # in each tile such that we match as possible the number of local pod modes
+  # # if "PolyOdGalerkinFull" in module.algos[scenario] and \
+  # #    -1 in module.odrom_poly_order[scenario]:
+  # #   mustDoPodModesForEachTile = True

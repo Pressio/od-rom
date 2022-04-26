@@ -33,7 +33,7 @@ from py_src.fncs_fom_run_dirs_detection import \
 from py_src.fncs_to_extract_from_mesh_info_file import *
 
 # -------------------------------------------------------------------
-def compute_od_pod_projection_errors(workDir, problem, module, scenario):
+def compute_impl(workDir, problem, module, scenario):
 
   this_file_path = pathlib.Path(__file__).parent.absolute()
   fomTestDirs = find_all_fom_test_dirs(workDir)
@@ -222,8 +222,8 @@ if __name__ == '__main__':
   check_and_print_problem_summary(problem, module)
   logging.info("")
 
-  if "ProjectionErrorUsingTileLocalPod" in module.algos[scenario]:
+  if "ProjectionErrorUsingTiledPodBases" in module.algos[scenario]:
     banner_compute_od_projection_error()
-    compute_od_pod_projection_errors(workDir, problem, module, scenario)
+    compute_impl(workDir, problem, module, scenario)
   else:
     logging.info("Nothing to do here")

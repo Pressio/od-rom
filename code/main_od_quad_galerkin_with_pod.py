@@ -32,7 +32,6 @@ from py_src.fncs_myio import \
 from py_src.fncs_directory_naming import \
   path_to_partition_info_dir, \
   path_to_state_pod_data_dir, \
-  path_to_rhs_pod_data_dir, \
   string_identifier_from_partition_info_dir, \
   path_to_partition_based_full_mesh_dir, \
   path_to_quad_projector_dir,\
@@ -243,7 +242,7 @@ if __name__ == '__main__':
   check_and_print_problem_summary(problem, module)
   logging.info("")
 
-  if "OdQuadGalerkinWithTileLocalPodBases" in module.algos[scenario]:
+  if "OdQuadGalerkinWithPodBases" in module.algos[scenario]:
     banner_run_pod_od_galerkin_quad_real()
 
     # before we move on, we need to ensure that in workDir

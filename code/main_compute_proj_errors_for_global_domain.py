@@ -144,7 +144,7 @@ if __name__ == '__main__':
   check_and_print_problem_summary(problem, module)
   logging.info("")
 
-  if "ProjectionErrorUsingGlobalPod" in module.algos[scenario]:
+  if "ProjectionErrorUsingGlobalPodBases" in module.algos[scenario]:
     banner_compute_full_domain_projection_error()
     compute_projection_errors(workDir, problem, module, scenario)
   else:

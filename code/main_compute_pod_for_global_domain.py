@@ -103,11 +103,11 @@ if __name__ == '__main__':
   module   = importlib.import_module(problem)
   check_and_print_problem_summary(problem, module)
 
-  # we need to compute global POD if any of the
-  # following is present in the target scenario
-  triggers = ["GlobalGalerkinWithPodBases", \
-              "ProjectionErrorUsingGlobalPod"]
-  if any(x in triggers for x in module.algos[scenario]):
+  # we need to compute global POD if any of the following
+  # substrings is present in the algo list of target scenario
+  matchers = ["GlobalGalerkinWithPodBases", "ProjectionErrorUsingGlobalPodBases"]
+  matching = [s for s in module.algos[scenario] if any(xs in s for xs in matchers)]
+  if matching or module.odrom_tile_based_or_split_global[scenario]=="SplitGlobal":
     banner_compute_full_pod()
 
     # before we move on, we need to ensure that in workDir
@@ -124,8 +124,7 @@ if __name__ == '__main__':
       compute_full_domain_state_pod(workDir, module, scenario, \
                                     setId, trainDirs, fomMeshPath)
 
-      if "PodStandardGalerkinGappy" in module.algos[scenario]:
-        logging.info("computing RHS POD on FULL domain for setId = {} {}".format(setId, color_resetter()))
-        logging.info(55*"-")
-        compute_full_domain_rhs_pod(workDir, module, scenario, \
-                                    setId, trainDirs, fomMeshPath)
+      logging.info("computing RHS POD on FULL domain for setId = {} {}".format(setId, color_resetter()))
+      logging.info(55*"-")
+      compute_full_domain_rhs_pod(workDir, module, scenario, \
+                                  setId, trainDirs, fomMeshPath)

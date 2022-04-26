@@ -243,8 +243,7 @@ def run_full_od_galerkin_for_all_test_values(workDir, problem, \
 
 
 # -------------------------------------------------------------------
-def run_od_pod_galerkin_full(workDir, problem, module, \
-                             scenario, fomMeshPath):
+def run_od_pod_galerkin_full(workDir, problem, module, scenario, fomMeshPath):
 
   # -------
   # loop 1: over all decompositions
@@ -284,8 +283,8 @@ def run_od_pod_galerkin_full(workDir, problem, module, \
             run_full_od_galerkin_for_all_test_values(workDir, problem, \
                                                      module, scenario, \
                                                      fomMeshPath, partInfoDirIt, \
-                                                     odRomMeshObj, setId, \
-                                                     currPodDir, "using_pod_bases",\
+                                                     odRomMeshObj, setId, currPodDir, \
+                                                     "using_pod_bases",\
                                                      modeSettingIt_key, \
                                                      modesPerTileDic, \
                                                      None, None)
@@ -297,8 +296,8 @@ def run_od_pod_galerkin_full(workDir, problem, module, \
             run_full_od_galerkin_for_all_test_values(workDir, problem, \
                                                      module, scenario, \
                                                      fomMeshPath, partInfoDirIt, \
-                                                     odRomMeshObj, setId, \
-                                                     currPodDir, "using_pod_bases",\
+                                                     odRomMeshObj, setId, currPodDir,\
+                                                     "using_pod_bases",\
                                                      modeSettingIt_key, \
                                                      modesPerTileDic, \
                                                      energyValue, None)
@@ -319,8 +318,8 @@ def run_od_pod_galerkin_full(workDir, problem, module, \
             run_full_od_galerkin_for_all_test_values(workDir, problem, \
                                                      module, scenario, \
                                                      fomMeshPath, partInfoDirIt, \
-                                                     odRomMeshObj, setId, \
-                                                     currPodDir, "using_pod_bases",\
+                                                     odRomMeshObj, setId, currPodDir, \
+                                                     "using_pod_bases",\
                                                      modeSettingIt_key, \
                                                      modesPerTileDic, \
                                                      energyValue, None)
@@ -372,21 +371,18 @@ if __name__ == '__main__':
   # run this script again with a different working directory
   fomMeshPath = find_full_mesh_and_ensure_unique(workDir)
 
-  if "OdGalerkinWithTileLocalPodBases" in module.algos[scenario]:
+  if "OdGalerkinWithPodBases" in module.algos[scenario]:
     banner_run_pod_od_galerkin()
 
-    # for od-rom without HR, for performance reasons,
-    # we don't/should not use the same full mesh used in the fom.
-    # We need to make a new full mesh with a new indexing
-    # that is consistent with the partitions and allows continguous storage
-    # of the state and rhs within each tile
-    if "OdGalerkinWithTileLocalPodBases"  in module.algos[scenario]:
-      banner_make_full_meshes_with_partition_based_indexing()
-      make_full_mesh_for_odrom_using_partition_based_indexing(workDir, \
-                                                              pdaDir, \
-                                                              module, \
-                                                              fomMeshPath)
-
+    # for od-rom without HR, for performance reasons, we should not use
+    # the same full mesh used in the fom. We need to make a new full mesh
+    # with indexing consistent with the partitions and allows continguous
+    # storage of the state and rhs within each tile
+    banner_make_full_meshes_with_partition_based_indexing()
+    make_full_mesh_for_odrom_using_partition_based_indexing(workDir, \
+                                                            pdaDir, \
+                                                            module, \
+                                                            fomMeshPath)
     run_od_pod_galerkin_full(workDir, problem, module, scenario, fomMeshPath)
 
   else:

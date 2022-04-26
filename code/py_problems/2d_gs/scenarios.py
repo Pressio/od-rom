@@ -32,10 +32,11 @@ test_points[1]  = {0: 0.04, 1: 0.06, 2: 0.075, 3: 0.025}
 use_ic_reference_state[1] = True
 basis_sets[1] = { 0: [0,1,2] }
 
-algos[1] = ["ProjectionErrorUsingGlobalPod", "ProjectionErrorUsingTileLocalPodBases"]
+algos[1] = ["ProjectionErrorUsingGlobalPodBases", "ProjectionErrorUsingTileLocalPodBases"]
 
 standardrom_modes_setting_policies[1] = {'userDefinedValue' : [10, 50, 100, 200, 500]}
 
+odrom_tile_based_or_split_global[1] = "TileBased"
 odrom_modes_setting_policies[1] = { 'tileSpecificUsingEnergy' : [99.99], \
                                     'allTilesUseTheSameUserDefinedValue' : [10, 15, 20],
                                     'findMinValueAcrossTilesUsingEnergyAndUseInAllTiles': [99.99]}
@@ -78,6 +79,7 @@ use_ic_reference_state[2] = use_ic_reference_state[1]
 basis_sets[2] = basis_sets[1]
 algos[2] = ["OdGalerkinWithTileLocalPodBases", "OdGappyGalerkinWithTileLocalPodBases"]
 
+odrom_tile_based_or_split_global[2] = "TileBased"
 odrom_modes_setting_policies[2] = { 'tileSpecificUsingEnergy' : [99.99], \
                                     'allTilesUseTheSameUserDefinedValue' : [10, 15, 20],
                                     'findMinValueAcrossTilesUsingEnergyAndUseInAllTiles': [99.99]}

@@ -50,8 +50,7 @@ from py_src.fncs_impl_od_galerkin_for_all_test_values import \
   run_hr_od_galerkin_for_all_test_values
 
 # -------------------------------------------------------------------
-def run_od_pod_galerkin_gappy(workDir, problem, module, \
-                              scenario, fomMeshPath):
+def main_impl(workDir, problem, module, scenario, fomMeshPath):
 
   # -------
   # loop 1: over all decompositions
@@ -87,7 +86,8 @@ def run_od_pod_galerkin_gappy(workDir, problem, module, \
               # all tiles have same modes, so find what that is
               numOfModes = modesPerTileDic[0]
 
-              projectorDir = path_to_gappy_projector_dir(workDir, "basedOnFactorOfStateModes",\
+              projectorDir = path_to_gappy_projector_dir(workDir, \
+                                                         "basedOnFactorOfStateModes",\
                                                          partitionStringIdentifier, \
                                                          setId, modeSettingIt_key, \
                                                          None, numOfModes, smKeyword)
@@ -136,7 +136,8 @@ def run_od_pod_galerkin_gappy(workDir, problem, module, \
 
               modesPerTileDic = make_modes_per_tile_dic_with_const_modes_count(nTiles, numModesChosen)
 
-              projectorDir = path_to_gappy_projector_dir(workDir, "basedOnFactorOfStateModes",\
+              projectorDir = path_to_gappy_projector_dir(workDir, \
+                                                         "basedOnFactorOfStateModes",\
                                                          partitionStringIdentifier, \
                                                          setId, modeSettingIt_key, \
                                                          energyValue, None, smKeyword)
@@ -176,7 +177,8 @@ def run_od_pod_galerkin_gappy(workDir, problem, module, \
             for energyValue in modeSettingIt_val:
               modesPerTileDic = find_modes_per_tile_from_target_energy(module, scenario, \
                                                                        currStateFullPodDir, energyValue)
-              projectorDir = path_to_gappy_projector_dir(workDir, "basedOnFactorOfStateModes",\
+              projectorDir = path_to_gappy_projector_dir(workDir, \
+                                                         "basedOnFactorOfStateModes",\
                                                          partitionStringIdentifier, \
                                                          setId, modeSettingIt_key, \
                                                          energyValue, None, smKeyword)
@@ -242,17 +244,10 @@ if __name__ == '__main__':
   check_and_print_problem_summary(problem, module)
   logging.info("")
 
-  if "OdGappyGalerkinWithTileLocalPodBases" in module.algos[scenario]:
+  if "OdGappyGalerkinWithPodBases" in module.algos[scenario]:
     banner_run_pod_od_galerkin_gappy_real()
-
-    # before we move on, we need to ensure that in workDir
-    # there is a unique FULL mesh. This is because the mesh is specified
-    # via command line argument and must be unique for a scenario.
-    # If one wants to run for a different mesh, then they have to
-    # run this script again with a different working directory
     fomMeshPath = find_full_mesh_and_ensure_unique(workDir)
-
-    run_od_pod_galerkin_gappy(workDir, problem, module, scenario, fomMeshPath)
+    main_impl(workDir, problem, module, scenario, fomMeshPath)
 
   else:
     logging.info("Nothing to do here")
