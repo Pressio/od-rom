@@ -2,46 +2,6 @@ import numpy as np
 
 from py_problems.dictionaries import *
 
-'''
-this scenario is interesting because the param space
-is such that the dynamics has a kind of bifurcation,
-so this is pretty hard.
-odrom performs pretty well while regular gal does not.
-'''
-base_dic[1] = {
-  'fom' : {
-    'meshSize': [200, 200],
-    'finalTimeTrain': 3000.,
-    'finalTimeTest' : 3000.,
-    'odeScheme': "RK4",
-    'dt' : 0.2,
-    'stateSamplingFreqTrain' : 8,
-    'velocitySamplingFreq'   : 8
-  },
-  'stateSamplingFreqTest' : 10,
-  'physicalCoefficients' : {
-    'diffusionA' : 0.00002,
-    'diffusionB' : 0.00001,
-    'killRate'   : 0.055,
-    'feedRate'   : "p0"
-  }
-}
-
-train_points[1] = {0: 0.025, 1: 0.027}
-test_points[1]  = {0: 0.024, 1: 0.025, 2: 0.026, 3: 0.028}
-use_ic_reference_state[1] = True
-basis_sets[1] = { 0: [0,1] }
-
-algos[1] = ["ProjectionErrorUsingGlobalPodBases", "ProjectionErrorUsingTiledPodBases"]
-
-standardrom_modes_setting_policies[1] = {'userDefinedValue': \
-                                         [10, 50, 100, 200, 500, 1000, 3000]}
-
-odrom_tile_based_or_split_global[1] = "TileBased"
-odrom_modes_setting_policies[1] = { 'tileSpecificUsingEnergy' : [99.99, 99.999, 99.9999]}
-odrom_min_num_modes_per_tile[1] = 5
-odrom_partitions[1] = {'rectangularUniform' : [[4,4], [7,7], [10,10], [15,15]]}
-
 
 '''
 same as [1] but we run roms for real
