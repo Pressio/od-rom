@@ -15,14 +15,12 @@
 
     - `./code/py_problems/2d_swe/wip_scenarios.py`: this is meant to be a playground of scenarios, and if/when ready some need to be moved to the final_scenario.py
 
-    - make sure you also edit the init file: `./code/py_problems/2d_swe/__init__.py`
-
   - Gray-Scott:
     - subdirectory: `py_problems.2d_gs`
 
-    - `./code/py_problems/2d_gs/scenarios.py`
+	- `./code/py_problems/2d_gs/final_scenarios.py`: this is meant to contain stable/final/reliable scenarios
 
-    - make sure you also edit the init file: `./code/py_problems/2d_gs/__init__.py`
+    - `./code/py_problems/2d_gs/wip_scenarios.py`: this is meant to be a playground of scenarios, and if/when ready some need to be moved to the final_scenario.py
 
 3. run the bach script:
 
