@@ -8,10 +8,7 @@ Specifically, we first want to show the expressive properties of the basis, ....
 Therefore, we organize this section ``by message''.
 For a given message/point to make, we show results for multiple problems.
 
-
-
-
-We use the following problems: the shallow-water equations in two dimensions, the Gray-Scott reaction-diffusion problem.
+We use the following problems: the shallow-water equations in two dimensions, the Gray-Scott reaction-diffusion problem, \PB{and two dimesional compressible flow past a cavity. }.
 These problems are taken from \href{https://pressio.github.io/pressio-demoapps}{\textsf{pressio-demoapps}} (PDA).
 PDA is an open-source project developed at Sandia National Laboratory that is aimed at providing benchmark ROM cases, and is part of the \href{https://pressio.github.io/}{\textsf{Pressio}} ecosystem.
 PDA include a cell-centered finite volume-based solver equipped with several flux schemes, exact Jacobians, sample mesh capabilities, and benchmark cases in one, two, and three dimensions.
@@ -31,6 +28,40 @@ The domain is $[-5, 5]^2$ with slip-wall BCs and initial condition: $h = 1 + \al
 with $\alpha = 1/8$ (initial pulse magnitude), $g = 9.8$ (gravity parameter), $\mu = -3.0$ (Coriolis parameter).
 
 
+
 \subsection{Gray-Scott Reaction Diffusion}
 
 The problem is described with the following system of PDE
+
+\subsection{Two-dimension compressible cavity flow}
+
+\PB{Summarize problem setup, flow field, etc.}
+
+\PB{Are we going to bother with hyper-reduction here?}
+
+\subsection{Local versus global basis}
+
+\PB{
+Some messages:
+\begin{itemize}
+\item {\bf Local bases are more expressive.} In addition to being shown with results, this point can probably be argued by drawing an analogy with finite elements vs. spectral methods. I believe spectral methods have superior approximation properties when the PDE being modeled can be well expressed by global Fourier modes or Legendre polynomials, but can struggle with highly localized features like waves. Possible plots: 
+\begin{itemize}
+\item Projection error vs. basis size for ODROM and Global ROMs. Basis size for ODROM is the total number of modes used in all subdomains. 
+\item ROM state error vs. basis size for ODROM and Global ROMs
+\item Quantity of Interest Error(s) vs. basis size for ODROM and Global ROMs
+\item Error vs. time-step size?
+\item Solution visualizations at select times comparing FOM, Global ROM, and ODROM
+\end{itemize}
+\item {\bf The impact of basis decomposition on stability tends to be positive.} I do not think we can argue rigorously that the ODROM formulation is more stable, but it seems to help in some cases, and is not much worse than Galerkin projection when it fails. If we bring this up as a message, an accompanying stability analysis with eigenvalues would be helpful; this should be feasible for all cases. Note that this message is closely related to the first one. 
+\begin{itemize}
+\item Imaginary plane plots for eigenvalues of ODROM and global ROMs
+\item refer to some of the error plots (state L2 and quantity of interest) to show when ROMs become unstable.
+\end{itemize}
+\item {\bf ODROM is considerably (ideally at least 10x) faster than the corresponding full model.} We need to show performance otherwise there's no point to any of this. 
+\begin{itemize}
+\item CPU and/or wall time comparisons for a given accuracy level AND/OR ROM dimension. 
+\item CPU and/or wall time comparisons for fixed ROM dimension but varying time step size. Probably would only increase the time step until some accuracy threshold is met (e.g. 1\% state error). 
+\end{itemize}
+\end{itemize}
+}
+
