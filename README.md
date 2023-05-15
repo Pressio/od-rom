@@ -22,7 +22,7 @@
 
     - `./code/py_problems/2d_gs/wip_scenarios.py`: this is meant to be a playground of scenarios, and if/when ready some need to be moved to the final_scenario.py
 
-3. run the bach script:
+3. run the batch script:
 
 ```bash
 export WORKDIR=/home/your_test
